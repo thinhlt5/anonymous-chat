@@ -30,17 +30,17 @@ const CreateRoomView = ({
                     className="flex items-center gap-2 text-gray-400 hover:text-neon-cyan transition-colors mb-6"
                 >
                     <ChevronLeft className="w-5 h-5" />
-                    <span className="text-sm">RETURN</span>
+                    <span className="text-sm">GO BACK</span>
                 </button>
 
                 {/* Header */}
                 <div className="text-center mb-8">
                     <Plus className="w-12 h-12 mx-auto text-neon-cyan mb-4" />
-                    <h2 className="text-2xl font-bold text-neon-cyan text-glow-cyan">
-                        CREATE OPERATION
+                    <h2 className="text-2xl font-bold text-neon-cyan">
+                        NEW PRIVATE ROOM
                     </h2>
                     <p className="text-gray-400 text-sm mt-2">
-                        Initialize a new secure channel
+                        Open a safe place to chat with anyone
                     </p>
                 </div>
 
@@ -49,13 +49,13 @@ const CreateRoomView = ({
                     {/* Room Name */}
                     <div>
                         <label className="block text-neon-cyan text-sm mb-2 tracking-wider">
-                            OPERATION NAME:
+                            ROOM NAME:
                         </label>
                         <input
                             type="text"
                             value={userData.room}
                             onChange={(e) => setUserData({ ...userData, room: e.target.value })}
-                            placeholder="Enter operation codename..."
+                            placeholder="Give your room a name..."
                             className="input-cyber"
                             maxLength={30}
                         />
@@ -65,14 +65,14 @@ const CreateRoomView = ({
                     <div>
                         <label className="block text-neon-pink text-sm mb-2 tracking-wider flex items-center gap-2">
                             <Lock className="w-4 h-4" />
-                            ENCRYPTION KEY (Optional):
+                            ROOM PASSWORD (Optional):
                         </label>
                         <div className="relative">
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 value={userData.password}
                                 onChange={(e) => setUserData({ ...userData, password: e.target.value })}
-                                placeholder="Set access password..."
+                                placeholder="Set room password..."
                                 className="input-cyber-pink pr-12"
                                 maxLength={50}
                             />
@@ -84,8 +84,8 @@ const CreateRoomView = ({
                                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                            Leave empty for open access
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                            Keep it empty for a public room
                         </p>
                     </div>
 
@@ -110,8 +110,7 @@ const CreateRoomView = ({
                             </>
                         ) : (
                             <>
-                                <Zap className="w-5 h-5" />
-                                INITIALIZE OPERATION
+                                CREATE ROOM
                             </>
                         )}
                     </button>
@@ -122,8 +121,8 @@ const CreateRoomView = ({
                     <div className="flex items-start gap-3">
                         <Shield className="w-5 h-5 text-neon-green flex-shrink-0 mt-0.5" />
                         <div className="text-xs text-gray-400">
-                            <p className="text-neon-green font-bold mb-1">SELF-DESTRUCT ENABLED</p>
-                            <p>Room will be automatically erased when all agents disconnect.</p>
+                            <p className="text-neon-green font-bold mb-1">AUTO-CLEANUP ACTIVE</p>
+                            <p>The room and all messages vanish when everyone leaves.</p>
                         </div>
                     </div>
                 </div>

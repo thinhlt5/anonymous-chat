@@ -16,7 +16,7 @@ const ModeView = ({ userData, navigateTo, goBack }) => {
                     className="flex items-center gap-2 text-gray-400 hover:text-neon-cyan transition-colors mb-6"
                 >
                     <ChevronLeft className="w-5 h-5" />
-                    <span className="text-sm">RETURN</span>
+                    <span className="text-sm">GO BACK</span>
                 </button>
 
                 {/* Header */}
@@ -25,7 +25,7 @@ const ModeView = ({ userData, navigateTo, goBack }) => {
                         <Terminal className="w-8 h-8 text-neon-green" />
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">
-                        OPERATION MODE
+                        READY TO CHAT?
                     </h2>
                     <p className="text-gray-400 text-sm">
                         Welcome, <span className="text-neon-cyan">{userData.username}</span>
@@ -44,8 +44,8 @@ const ModeView = ({ userData, navigateTo, goBack }) => {
                                 <Plus className="w-6 h-6 text-neon-cyan" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-neon-cyan">CREATE OPERATION</h3>
-                                <p className="text-sm text-gray-400">Initialize a new secure channel</p>
+                                <h3 className="text-lg font-bold text-neon-cyan">START A NEW ROOM</h3>
+                                <p className="text-sm text-gray-400">Open a new private space <br/> for everyone.</p>
                             </div>
                         </div>
                     </button>
@@ -60,20 +60,13 @@ const ModeView = ({ userData, navigateTo, goBack }) => {
                                 <LogIn className="w-6 h-6 text-neon-pink" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-neon-pink">JOIN OPERATION</h3>
-                                <p className="text-sm text-gray-400">Connect to existing channel</p>
+                                <h3 className="text-lg font-bold text-neon-pink">JOIN A ROOM</h3>
+                                <p className="text-sm text-gray-400">Enter an existing<br/>room name</p>
                             </div>
                         </div>
                     </button>
                 </div>
 
-                {/* Status */}
-                <div className="mt-8 flex items-center justify-center gap-4 text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                        SECURE CONNECTION
-                    </div>
-                </div>
             </div>
         </div>
     );
