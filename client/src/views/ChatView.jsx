@@ -208,7 +208,7 @@ const ChatView = ({
     const playRemoteAudio = (peerId, stream) => {
         if (remoteAudioRefs.current[peerId]) {
             // Audio element already exists - update the stream
-            console.log('🔄 Updating existing audio stream for peer:', peerId);
+            console.log('Updating existing audio stream for peer:', peerId);
             const audio = remoteAudioRefs.current[peerId];
             audio.srcObject = stream;
             audio.play().catch(err => console.warn('Play after update failed:', err));
@@ -216,11 +216,21 @@ const ChatView = ({
         }
         
         console.log('🔊 Setting up audio for peer:', peerId);
+        
+        // Log stream details
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            console.log(`Checking track for ${peerId}:`, audioTracks[0].label, 'Enabled:', audioTracks[0].enabled, 'Muted:', audioTracks[0].muted);
+        } else {
+            console.warn(`Warning: Stream from ${peerId} has NO audio tracks!`);
+        }
+
         const audio = new Audio();
         audio.srcObject = stream;
         audio.autoplay = true;
         audio.playsInline = true; // Important for iOS
-        audio.volume = 1.0; // Ensure volume is at max
+        audio.volume = 1.0; 
+        audio.muted = false; // Explicitly unmute but loopback protection might be needed if testing on same device without headphones
         
         // CRITICAL: Append to document body so browser can play it
         audio.style.display = 'none';
@@ -230,6 +240,12 @@ const ChatView = ({
         try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             const audioCtx = new AudioContext();
+            
+            // Resume context immediately if suspended
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
             const analyser = audioCtx.createAnalyser();
             const source = audioCtx.createMediaStreamSource(stream);
             
@@ -268,29 +284,31 @@ const ChatView = ({
         }
 
         // Try to play immediately
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise
-                .then(() => {
-                    console.log('✅ Audio playing successfully for peer:', peerId);
-                })
-                .catch(err => {
-                    console.warn('⚠️ Audio autoplay blocked for peer:', peerId, err);
-                    // Add fallback for both mobile and desktop
-                    const playOnInteraction = () => {
-                        audio.play()
-                            .then(() => {
-                                console.log('✅ Audio started after user interaction');
-                                document.removeEventListener('click', playOnInteraction);
-                                document.removeEventListener('touchstart', playOnInteraction);
-                            })
-                            .catch(() => {});
-                    };
-                    
-                    document.addEventListener('touchstart', playOnInteraction, { once: true });
-                    document.addEventListener('click', playOnInteraction, { once: true });
-                });
-        }
+        const playWithRetry = () => {
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        console.log('✅ Audio playing successfully for peer:', peerId);
+                    })
+                    .catch(err => {
+                        console.warn('⚠️ Audio autoplay blocked for peer:', peerId, err);
+                        // Store this unlock function globally or attach to a one-time click listener
+                        const unlockAudio = () => {
+                            audio.play().catch(e => console.error('Unlock failed', e));
+                            // Also resume any suspended contexts
+                            Object.values(remoteAnalysersRef.current).forEach(({ audioCtx }) => {
+                                if (audioCtx.state === 'suspended') audioCtx.resume();
+                            });
+                            document.removeEventListener('click', unlockAudio);
+                            document.removeEventListener('touchstart', unlockAudio);
+                        };
+                        document.addEventListener('click', unlockAudio, { once: true });
+                        document.addEventListener('touchstart', unlockAudio, { once: true });
+                    });
+            }
+        };
+        playWithRetry();
 
         remoteAudioRefs.current[peerId] = audio;
         console.log('🎧 Remote audio element created for peer:', peerId);
