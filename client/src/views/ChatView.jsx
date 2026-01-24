@@ -208,7 +208,7 @@ const ChatView = ({
     const playRemoteAudio = (peerId, stream) => {
         if (remoteAudioRefs.current[peerId]) {
             // Audio element already exists - update the stream
-            console.log('� Updating existing audio stream for peer:', peerId);
+            console.log('🔄 Updating existing audio stream for peer:', peerId);
             const audio = remoteAudioRefs.current[peerId];
             audio.srcObject = stream;
             audio.play().catch(err => console.warn('Play after update failed:', err));
@@ -221,6 +221,10 @@ const ChatView = ({
         audio.autoplay = true;
         audio.playsInline = true; // Important for iOS
         audio.volume = 1.0; // Ensure volume is at max
+        
+        // CRITICAL: Append to document body so browser can play it
+        audio.style.display = 'none';
+        document.body.appendChild(audio);
 
         // Setup audio analysis for remote user visualization
         try {
@@ -295,7 +299,13 @@ const ChatView = ({
     // Remove remote audio stream
     const removeRemoteAudio = (peerId) => {
         if (remoteAudioRefs.current[peerId]) {
-            remoteAudioRefs.current[peerId].srcObject = null;
+            const audio = remoteAudioRefs.current[peerId];
+            audio.pause();
+            audio.srcObject = null;
+            // Remove from DOM
+            if (audio.parentNode) {
+                audio.parentNode.removeChild(audio);
+            }
             delete remoteAudioRefs.current[peerId];
         }
         
@@ -1029,7 +1039,9 @@ const ChatView = ({
                             );
                         }
 
-                        const isOwn = msg.senderId === socket.id;
+                        // More robust check: compare both socket ID and username
+                        // Fallback to username if socket.id doesn't match (handles reconnection)
+                        const isOwn = msg.senderId === socket.id || msg.sender === userData.username;
 
                         return (
                             <div
