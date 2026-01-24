@@ -163,17 +163,28 @@ io.on("connection", (socket) => {
     // SEND MESSAGE - Broadcast chat message to room
     // ─────────────────────────────────────────────────────────────────
     socket.on("send_message", ({ message, username, room }) => {
+        // Safe guard against crash
+        const safeMessage = message || ""; 
+        const safeUsername = username || "Anonymous";
+        const safeRoom = room || "Unknown";
+
         const messageData = {
             id: `${socket.id}-${Date.now()}`,
-            sender: username,
+            sender: safeUsername,
             senderId: socket.id,
-            content: message,
+            content: safeMessage,
             type: 'text',
             timestamp: Date.now()
         };
 
-        io.to(room).emit("receive_message", messageData);
-        logSystem(`💬 [${room}] ${username}: ${message.substring(0, 50)}...`);
+        io.to(safeRoom).emit("receive_message", messageData);
+        
+        // Prevent crash on logging
+        try {
+            logSystem(`💬 [${safeRoom}] ${safeUsername}: ${safeMessage.substring(0, 50)}...`);
+        } catch (err) {
+            console.error("Logging error:", err);
+        }
     });
 
     // ─────────────────────────────────────────────────────────────────
