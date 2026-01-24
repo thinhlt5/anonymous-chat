@@ -40,6 +40,7 @@ const ChatView = ({
     const [messageInput, setMessageInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [previewFile, setPreviewFile] = useState(null);
 
     // Voice Chat - using new simplified hook
     const {
@@ -64,17 +65,31 @@ const ChatView = ({
     // Message handling
     const handleSendMessage = (e) => {
         e.preventDefault();
-        if (!messageInput.trim()) return;
+        
+        // Send file if exists
+        if (previewFile) {
+            socket.emit('send_file', {
+                room: userData.room,
+                username: userData.username,
+                fileData: previewFile.data,
+                fileName: previewFile.name,
+                fileType: previewFile.type,
+                fileSize: previewFile.size
+            });
+            setPreviewFile(null);
+        }
 
-        socket.emit('send_message', {
-            room: userData.room,
-            content: messageInput,
-            sender: userData.username
-        });
-
-        setMessageInput('');
-        setIsTyping(false);
-        socket.emit('typing', { room: userData.room, username: userData.username, isTyping: false });
+        // Send text if exists
+        if (messageInput.trim()) {
+            socket.emit('send_message', {
+                room: userData.room,
+                content: messageInput,
+                sender: userData.username
+            });
+            setMessageInput('');
+            setIsTyping(false);
+            socket.emit('typing', { room: userData.room, username: userData.username, isTyping: false });
+        }
     };
 
     const handleTyping = (e) => {
@@ -104,19 +119,22 @@ const ChatView = ({
         const reader = new FileReader();
         reader.onload = (event) => {
             const dataUrl = event.target.result;
-
-            // Use 'send_file' event as expected by server
-            socket.emit('send_file', {
-                room: userData.room,
-                username: userData.username,
-                fileData: dataUrl,
-                fileName: file.name || 'pasted-image.png',
-                fileType: file.type,
-                fileSize: file.size
+            
+            // Set preview instead of sending immediately
+            setPreviewFile({
+                data: dataUrl,
+                name: file.name || 'pasted-image.png',
+                type: file.type,
+                size: file.size
             });
         };
 
         reader.readAsDataURL(file);
+    };
+
+    const handleRemovePreview = () => {
+        setPreviewFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     // File upload
@@ -249,21 +267,64 @@ const ChatView = ({
 
                     {/* Input Area */}
                     <form onSubmit={handleSendMessage} className="p-4 bg-dark-surface/50 border-t border-neon-cyan/20">
+                        {/* Image Preview */}
+                        {previewFile && (
+                            <div className="flex items-center gap-2 mb-2 p-2 bg-dark-bg/50 rounded-lg border border-neon-cyan/20 w-fit relative group">
+                                <div className="relative">
+                                    {previewFile.type.startsWith('image/') ? (
+                                        <img src={previewFile.data} alt="Preview" className="h-20 w-auto rounded-md object-cover" />
+                                    ) : (
+                                        <div className="h-20 w-20 flex flex-col items-center justify-center bg-dark-surface rounded-md">
+                                            <Paperclip className="w-8 h-8 text-neon-cyan mb-1" />
+                                            <span className="text-[10px] text-gray-400 max-w-[70px] truncate">{previewFile.name}</span>
+                                        </div>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleRemovePreview}
+                                        className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 transition shadow-lg"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex gap-2">
                             <input
                                 type="file"
                                 ref={fileInputRef}
                                 onChange={handleFileSelect}
                                 className="hidden"
-                                accept="image/*,application/pdf,.doc,.docx,.txt"
+                                accept="*" 
                             />
+                            {/* Paperclip for Generic Files */}
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="p-3 bg-dark-surface border border-neon-cyan/30 text-neon-cyan rounded-lg hover:bg-neon-cyan/10 transition-colors"
+                                className="p-3 bg-dark-surface border border-neon-cyan/30 text-neon-cyan rounded-lg hover:bg-neon-cyan/10 transition-colors tooltip"
+                                title="Attach File"
                             >
                                 <Paperclip className="w-5 h-5" />
                             </button>
+                            
+                            {/* Dedicated Image Button */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if(fileInputRef.current) {
+                                        fileInputRef.current.accept = "image/*";
+                                        fileInputRef.current.click();
+                                        // Reset accept after click (optional, but good for UX if they click paperclip next)
+                                        setTimeout(() => fileInputRef.current.accept = "*", 500);
+                                    }
+                                }}
+                                className="p-3 bg-dark-surface border border-neon-cyan/30 text-neon-purple rounded-lg hover:bg-neon-purple/10 transition-colors"
+                                title="Send Image"
+                            >
+                                <Image className="w-5 h-5" />
+                            </button>
+
                             <input
                                 type="text"
                                 value={messageInput}
@@ -274,7 +335,12 @@ const ChatView = ({
                             />
                             <button
                                 type="submit"
-                                className="px-6 py-3 bg-neon-cyan text-dark-bg rounded-lg hover:bg-neon-cyan/80 transition-colors font-semibold"
+                                disabled={!messageInput.trim() && !previewFile}
+                                className={`px-6 py-3 rounded-lg transition-colors font-semibold ${
+                                    (messageInput.trim() || previewFile) 
+                                        ? 'bg-neon-cyan text-dark-bg hover:bg-neon-cyan/80' 
+                                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                }`}
                             >
                                 <Send className="w-5 h-5" />
                             </button>

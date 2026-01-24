@@ -16,7 +16,16 @@ const peerServer = ExpressPeerServer(server, {
 app.use('/peerjs', peerServer);
 
 const io = new Server(server, {
-    cors: { origin: "*" },
+    cors: {
+        origin: [
+            "https://anonymous-chat-nine.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "*"
+        ],
+        methods: ["GET", "POST"],
+        credentials: true
+    },
     maxHttpBufferSize: 10 * 1024 * 1024 // Max file/image size: 10MB
 });
 
