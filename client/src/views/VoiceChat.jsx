@@ -64,6 +64,11 @@ export const useVoiceChat = (socket, peer, peerId, roomName, username) => {
         console.log('📞 Calling peer:', remotePeerId);
         const call = peer.call(remotePeerId, localStreamRef.current);
         
+        if (!call) {
+            console.warn('❌ Failed to initiate call to', remotePeerId);
+            return;
+        }
+
         call.on('stream', (remoteStream) => {
             console.log('📥 Received stream from:', remotePeerId);
             playRemoteStream(remotePeerId, remoteStream);

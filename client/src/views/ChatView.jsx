@@ -175,9 +175,9 @@ const ChatView = ({
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-dark-bg via-dark-surface to-dark-bg flex flex-col">
+        <div className="h-[100dvh] w-full bg-gradient-to-br from-dark-bg via-dark-surface to-dark-bg flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="bg-dark-surface/80 backdrop-blur-sm border-b border-neon-cyan/30 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+            <div className="bg-dark-surface/80 backdrop-blur-sm border-b border-neon-cyan/30 px-4 py-3 flex items-center justify-between sticky top-0 z-10 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -201,11 +201,11 @@ const ChatView = ({
                 </button>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex overflow-hidden relative">
                 {/* Main Chat Area */}
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col w-full min-w-0">
                     {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
                         {messages.map((msg) => {
                             if (msg.type === 'system') {
                                 return (
@@ -221,7 +221,7 @@ const ChatView = ({
 
                             return (
                                 <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-xs sm:max-w-md ${isOwn ? 'bg-neon-cyan/20 border-neon-cyan/30' : 'bg-dark-surface border-gray-700'} border rounded-2xl p-3`}>
+                                    <div className={`max-w-[75%] sm:max-w-md ${isOwn ? 'bg-neon-cyan/20 border-neon-cyan/30' : 'bg-dark-surface border-gray-700'} border rounded-2xl p-3`}>
                                         {!isOwn && (
                                             <p className="text-xs text-neon-purple font-semibold mb-1">{msg.sender}</p>
                                         )}
@@ -236,21 +236,21 @@ const ChatView = ({
                                         ) : (msg.type === 'file' || (msg.file && !msg.file.type?.startsWith('image/'))) ? (
                                             <button
                                                 onClick={() => handleFileDownload(msg)}
-                                                className="flex items-center gap-2 text-sm text-neon-cyan hover:text-neon-cyan/80 transition"
+                                                className="flex items-center gap-2 text-sm text-neon-cyan hover:text-neon-cyan/80 transition break-all"
                                             >
-                                                <Download className="w-4 h-4" />
-                                                {msg.fileName || (msg.file && msg.file.name)}
+                                                <Download className="w-4 h-4 flex-shrink-0" />
+                                                <span>{msg.fileName || (msg.file && msg.file.name)}</span>
                                             </button>
                                         ) : null}
 
                                         {(msg.type === 'text' || (!msg.type && !msg.file)) && msg.content && (
                                             <p 
-                                                className="text-sm text-white break-words"
+                                                className="text-sm text-white break-words whitespace-pre-wrap"
                                                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.content) }}
                                             />
                                         )}
 
-                                        <p className="text-[10px] text-gray-500 mt-1">{formatTime(msg.timestamp)}</p>
+                                        <p className="text-[10px] text-gray-500 mt-1 text-right">{formatTime(msg.timestamp)}</p>
                                     </div>
                                 </div>
                             );
@@ -260,13 +260,13 @@ const ChatView = ({
 
                     {/* Typing Indicator */}
                     {typingUsers.length > 0 && (
-                        <div className="px-4 py-2 text-xs text-gray-400">
+                        <div className="px-4 py-2 text-xs text-gray-400 flex-shrink-0">
                             {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
                         </div>
                     )}
 
                     {/* Input Area */}
-                    <form onSubmit={handleSendMessage} className="p-4 bg-dark-surface/50 border-t border-neon-cyan/20">
+                    <form onSubmit={handleSendMessage} className="p-4 bg-dark-surface/50 border-t border-neon-cyan/20 flex-shrink-0">
                         {/* Image Preview */}
                         {previewFile && (
                             <div className="flex items-center gap-2 mb-2 p-2 bg-dark-bg/50 rounded-lg border border-neon-cyan/20 w-fit relative group">
@@ -302,7 +302,7 @@ const ChatView = ({
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="p-3 bg-dark-surface border border-neon-cyan/30 text-neon-cyan rounded-lg hover:bg-neon-cyan/10 transition-colors tooltip"
+                                className="p-3 bg-dark-surface border border-neon-cyan/30 text-neon-cyan rounded-lg hover:bg-neon-cyan/10 transition-colors flex-shrink-0"
                                 title="Attach File"
                             >
                                 <Paperclip className="w-5 h-5" />
@@ -319,7 +319,7 @@ const ChatView = ({
                                         setTimeout(() => fileInputRef.current.accept = "*", 500);
                                     }
                                 }}
-                                className="p-3 bg-dark-surface border border-neon-cyan/30 text-neon-purple rounded-lg hover:bg-neon-purple/10 transition-colors"
+                                className="p-3 bg-dark-surface border border-neon-cyan/30 text-neon-purple rounded-lg hover:bg-neon-purple/10 transition-colors flex-shrink-0"
                                 title="Send Image"
                             >
                                 <Image className="w-5 h-5" />
