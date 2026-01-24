@@ -256,26 +256,30 @@ const ChatView = ({
             console.warn(`Warning: Stream from ${peerId} has NO audio tracks!`);
         }
 
-        const audio = new Audio();
-        audio.srcObject = stream;
-        audio.autoplay = true;
-        audio.playsInline = true;
-        audio.volume = 1.0;
-        audio.muted = false; // NOT muted - we want to hear it
+        // CRITICAL FIX: Use VIDEO element for MediaStream (better browser support than Audio)
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.volume = 1.0;
+        video.muted = false;
         
-        // Append to DOM
-        audio.style.display = 'none';
-        document.body.appendChild(audio);
+        // Hide video element (we only want audio)
+        video.style.position = 'fixed';
+        video.style.top = '-9999px';
+        video.style.width = '1px';
+        video.style.height = '1px';
+        document.body.appendChild(video);
 
         // Try to play
-        audio.play()
+        video.play()
             .then(() => {
                 console.log('✅ Audio playing for peer:', peerId);
             })
             .catch(err => {
                 console.warn('⚠️ Autoplay blocked, waiting for user interaction');
                 const unlock = () => {
-                    audio.play().catch(e => console.error('Unlock failed', e));
+                    video.play().catch(e => console.error('Unlock failed', e));
                     document.removeEventListener('click', unlock);
                     document.removeEventListener('touchstart', unlock);
                 };
@@ -283,7 +287,7 @@ const ChatView = ({
                 document.addEventListener('touchstart', unlock, { once: true });
             });
 
-        remoteAudioRefs.current[peerId] = audio;
+        remoteAudioRefs.current[peerId] = video;
         console.log('🎧 Remote audio setup complete for peer:', peerId);
     };
 
