@@ -23,17 +23,17 @@ const JoinRoomView = ({
                     className="flex items-center gap-2 text-gray-400 hover:text-neon-pink transition-colors mb-6"
                 >
                     <ChevronLeft className="w-5 h-5" />
-                    <span className="text-sm">RETURN</span>
+                    <span className="text-sm">GO BACK</span>
                 </button>
 
                 {/* Header */}
                 <div className="text-center mb-8">
                     <LogIn className="w-12 h-12 mx-auto text-neon-pink mb-4" />
-                    <h2 className="text-2xl font-bold text-neon-pink text-glow-pink">
-                        JOIN OPERATION
+                    <h2 className="text-2xl font-bold text-neon-pink">
+                        JOIN A ROOM
                     </h2>
                     <p className="text-gray-400 text-sm mt-2">
-                        Enter coordinates to connect
+                        Enter the room name to connect
                     </p>
                 </div>
 
@@ -42,14 +42,14 @@ const JoinRoomView = ({
                     {/* Room Name */}
                     <div>
                         <label className="block text-neon-pink text-sm mb-2 tracking-wider">
-                            OPERATION ID:
+                            ROOM NAME:
                         </label>
                         <input
                             type="text"
                             value={userData.room}
                             onChange={(e) => setUserData({ ...userData, room: e.target.value })}
                             onKeyDown={(e) => e.key === 'Enter' && userData.room.trim() && handleCheckRoom()}
-                            placeholder="Enter operation codename..."
+                            placeholder="Enter room name..."
                             className="input-cyber-pink"
                             autoFocus
                             maxLength={30}
@@ -78,7 +78,7 @@ const JoinRoomView = ({
                         ) : (
                             <>
                                 <LogIn className="w-5 h-5" />
-                                CONNECT TO OPERATION
+                                CONNECT TO ROOM
                             </>
                         )}
                     </button>
