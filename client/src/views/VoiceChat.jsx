@@ -85,41 +85,72 @@ export const useVoiceChat = (socket, peer, peerId, roomName, username) => {
     const playRemoteStream = (remotePeerId, stream) => {
         console.log('🔊 Playing stream from:', remotePeerId);
         
+        // Debug track status
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            console.log(`🎵 Track enabled: ${audioTracks[0].enabled}, Muted: ${audioTracks[0].muted}, State: ${audioTracks[0].readyState}`);
+            audioTracks[0].onmute = () => console.warn(`🔇 Track muted by network/peer: ${remotePeerId}`);
+            audioTracks[0].onunmute = () => console.log(`🔈 Track unmuted: ${remotePeerId}`);
+        } else {
+            console.warn('⚠️ No audio tracks in remote stream!');
+        }
+
         // Remove old video if exists
         if (remoteVideosRef.current[remotePeerId]) {
             remoteVideosRef.current[remotePeerId].remove();
         }
 
-        // Create hidden video element
-        const video = document.createElement('video');
+        // Create hidden video/audio element
+        const video = document.createElement('audio'); // Changed to audio tag for clarity
         video.srcObject = stream;
         video.autoplay = true;
         video.playsInline = true;
-        video.muted = false;
+        video.controls = true; // Temporary for debug
         video.volume = 1.0;
         
-        // Hide it
+        // Hide it visually but keep it in DOM
         video.style.position = 'fixed';
-        video.style.top = '-9999px';
-        video.style.width = '1px';
-        video.style.height = '1px';
+        video.style.bottom = '0';
+        video.style.right = '0';
+        video.style.opacity = '0.5'; // Visible for debug
+        video.style.zIndex = '9999';
         
         document.body.appendChild(video);
         remoteVideosRef.current[remotePeerId] = video;
 
-        // Play with retry
-        video.play()
-            .then(() => console.log('✅ Playing audio from:', remotePeerId))
-            .catch(err => {
-                console.warn('Autoplay blocked, click page to unlock');
-                const unlock = () => {
+        // Play with robust retry logic
+        const tryPlay = async () => {
+            try {
+                await video.play();
+                console.log('✅ Audio playback started for:', remotePeerId);
+            } catch (err) {
+                console.warn('⚠️ Autoplay blocked for:', remotePeerId, err);
+                
+                // Show a toast or UI hint to user
+                const btn = document.createElement('button');
+                btn.innerText = `🔇 Click to hear ${remotePeerId.substr(0,4)}`;
+                btn.style.position = 'fixed';
+                btn.style.top = '10px';
+                btn.style.left = '50%';
+                btn.style.transform = 'translateX(-50%)';
+                btn.style.zIndex = '10000';
+                btn.style.padding = '10px 20px';
+                btn.style.background = '#ff4444';
+                btn.style.color = 'white';
+                btn.style.borderRadius = '50px';
+                btn.style.border = 'none';
+                btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                
+                btn.onclick = () => {
                     video.play();
-                    document.removeEventListener('click', unlock);
-                    document.removeEventListener('touchstart', unlock);
+                    btn.remove();
+                    console.log('🔊 User manually started playback');
                 };
-                document.addEventListener('click', unlock, { once: true });
-                document.addEventListener('touchstart', unlock, { once: true });
-            });
+                document.body.appendChild(btn);
+            }
+        };
+        
+        tryPlay();
     };
 
     // Leave voice chat
