@@ -185,36 +185,28 @@ function App() {
     // This allows easy discovery (Public) but reliable connection (TURN)
     
     const peerConfig = {
-      debug: 1,
-      // No 'host/port/path' = defaults to public 0.peerjs.com
+      debug: 2, // Check verbose logs
       config: {
         iceServers: [
-          // 🚀 OpenRelay (Free TURN Server) - Critical for WAN/Mobile connections
+          // 🚀 OpenRelay (Simple & Standard Config)
           {
-            urls: "stun:openrelay.metered.ca:80",
-          },
-          {
-            urls: "turn:openrelay.metered.ca:80",
+            urls: [
+              "stun:openrelay.metered.ca:80",
+              "turn:openrelay.metered.ca:80",
+              "turn:openrelay.metered.ca:443",
+            ],
             username: "openrelayproject",
             credential: "openrelayproject",
           },
-          {
-            urls: "turn:openrelay.metered.ca:443",
-            username: "openrelayproject",
-            credential: "openrelayproject",
-          },
-          {
-            urls: "turn:openrelay.metered.ca:443?transport=tcp",
-            username: "openrelayproject",
-            credential: "openrelayproject",
-          },
-          // Google Public STUN (Fallback)
+          // Google Public STUN
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
         ],
         iceCandidatePoolSize: 10,
       }
     };
+    
+    console.log("🔧 PeerJS Config Loaded:", peerConfig); // Validate config
 
     const peerInstance = new Peer(undefined, peerConfig);
 

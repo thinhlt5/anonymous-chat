@@ -69,6 +69,12 @@ export const useVoiceChat = (socket, peer, peerId, roomName, username) => {
             return;
         }
 
+        // Monitor connection state
+        call.peerConnection.oniceconnectionstatechange = () => {
+            const state = call.peerConnection.iceConnectionState;
+            console.log(`📡 Outgoing Call ICE State (${remotePeerId}): ${state}`);
+        };
+
         call.on('stream', (remoteStream) => {
             console.log('📥 Received stream from:', remotePeerId);
             playRemoteStream(remotePeerId, remoteStream);
@@ -203,6 +209,20 @@ export const useVoiceChat = (socket, peer, peerId, roomName, username) => {
             // Answer with our stream
             call.answer(localStreamRef.current);
 
+            // Listen for connection state changes (Critical for debugging WAN issues)
+            call.peerConnection.oniceconnectionstatechange = () => {
+                const state = call.peerConnection.iceConnectionState;
+                console.log(`📡 ICE State (${remotePeerId}): ${state}`);
+                
+                if (state === 'failed' || state === 'disconnected') {
+                    console.error(`❌ Connection failed with ${remotePeerId}. Possible TURN server issue.`);
+                    // Optional: Retry logic could go here
+                }
+                if (state === 'connected') {
+                    console.log(`✅ P2P Connection established with ${remotePeerId}!`);
+                }
+            };
+            
             // Listen for their stream
             call.on('stream', (remoteStream) => {
                 console.log('📥 Received stream from:', call.peer);

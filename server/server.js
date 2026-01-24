@@ -349,7 +349,7 @@ io.on("connection", (socket) => {
             // Remove user from room
             rooms[roomName].users.delete(socket.id);
 
-            logSystem(`👋 ${username} disconnected from room "${roomName}"`);
+            logSystem(`${username} disconnected from room "${roomName}"`);
 
             // Notify remaining users
             socket.to(roomName).emit("system_message", {
@@ -361,7 +361,7 @@ io.on("connection", (socket) => {
             // Broadcast updated user list
             broadcastUserList(roomName);
 
-            // ⚠️ SELF-DESTRUCT: Check if room is empty and destroy it
+            // SELF-DESTRUCT: Check if room is empty and destroy it
             selfDestructRoom(roomName);
         }
 
@@ -379,7 +379,7 @@ io.on("connection", (socket) => {
             rooms[room].users.delete(socket.id);
             socket.leave(room);
 
-            logSystem(`🚪 ${username} left room "${room}"`);
+            logSystem(`${username} left room "${room}"`);
 
             socket.to(room).emit("system_message", {
                 type: "leave",
