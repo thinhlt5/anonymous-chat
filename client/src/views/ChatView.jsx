@@ -191,25 +191,42 @@ const ChatView = ({
     // Play remote audio stream (with iOS workaround)
     const playRemoteAudio = (peerId, stream) => {
         if (!remoteAudioRefs.current[peerId]) {
+            console.log('🔊 Setting up audio for peer:', peerId);
             const audio = new Audio();
             audio.srcObject = stream;
             audio.autoplay = true;
             audio.playsInline = true; // Important for iOS
+            audio.volume = 1.0; // Ensure volume is at max
 
-            // iOS requires user interaction to play audio
+            // Try to play immediately
             const playPromise = audio.play();
             if (playPromise !== undefined) {
-                playPromise.catch(err => {
-                    console.log('Audio autoplay blocked, will play on interaction:', err);
-                    // Store for later play on user interaction
-                    document.addEventListener('touchstart', () => {
-                        audio.play().catch(() => { });
-                    }, { once: true });
-                });
+                playPromise
+                    .then(() => {
+                        console.log('✅ Audio playing successfully for peer:', peerId);
+                    })
+                    .catch(err => {
+                        console.warn('⚠️ Audio autoplay blocked for peer:', peerId, err);
+                        // Add fallback for both mobile and desktop
+                        const playOnInteraction = () => {
+                            audio.play()
+                                .then(() => {
+                                    console.log('✅ Audio started after user interaction');
+                                    document.removeEventListener('click', playOnInteraction);
+                                    document.removeEventListener('touchstart', playOnInteraction);
+                                })
+                                .catch(() => {});
+                        };
+                        
+                        document.addEventListener('touchstart', playOnInteraction, { once: true });
+                        document.addEventListener('click', playOnInteraction, { once: true });
+                    });
             }
 
             remoteAudioRefs.current[peerId] = audio;
-            console.log('Playing remote audio for peer:', peerId);
+            console.log('🎧 Remote audio element created for peer:', peerId);
+        } else {
+            console.log('⚠️ Audio already exists for peer:', peerId);
         }
     };
 
@@ -382,6 +399,7 @@ const ChatView = ({
 
     // Join Voice Chat
     const joinVoiceChat = async () => {
+        console.log('🎤 JOIN VOICE CHAT - Starting...');
         setVoiceError('');
         setShowPermissionDialog(false);
 
@@ -394,12 +412,15 @@ const ChatView = ({
         // Check PeerJS connection
         if (peerStatus !== 'connected') {
             setVoiceError('Đang kết nối đến server... Vui lòng đợi vài giây và thử lại.');
+            console.error('❌ PeerJS not ready:', peerStatus);
             return;
         }
 
+        console.log('✅ PeerJS ready, ID:', peerId);
+
         // Check permission status first
         const permissionStatus = await checkMicrophonePermission();
-        console.log('Permission status:', permissionStatus);
+        console.log('🎤 Permission status:', permissionStatus);
 
         if (permissionStatus === 'denied') {
             setVoiceError('Quyền microphone đã bị từ chối.\n\n📱 Để bật lại trên Chrome Mobile:\n1. Nhấn vào biểu tượng 🔒 bên cạnh URL\n2. Nhấn "Quyền trang web"\n3. Cho phép Microphone');
@@ -412,24 +433,28 @@ const ChatView = ({
 
         try {
             setIsConnectingVoice(true);
+            console.log('🎤 Requesting microphone access...');
 
             const stream = await requestMicrophoneAccess();
 
             if (!stream) {
+                console.error('❌ No stream received');
                 setIsConnectingVoice(false);
                 setShowPermissionDialog(false);
                 return;
             }
+
+            console.log('✅ Stream acquired:', stream.id, 'Tracks:', stream.getAudioTracks().length);
 
             setShowPermissionDialog(false);
             setLocalStream(stream);
             localStreamRef.current = stream;
             setInVoiceChat(true);
 
-            console.log('Voice chat joined, stream set in ref');
-
+            console.log('✅ Voice chat state updated, stream in ref');
 
             // Notify server
+            console.log('📡 Notifying server: join_voice_chat');
             socket.emit('join_voice_chat', {
                 room: userData.room,
                 username: userData.username,
@@ -438,11 +463,14 @@ const ChatView = ({
 
             // Wait a moment for voice chat users list
             setTimeout(() => {
+                console.log('📡 Getting voice chat users list...');
                 socket.emit('get_voice_chat_users', { room: userData.room }, (users) => {
+                    console.log('📋 Voice chat users:', users);
                     setVoiceChatUsers(users || []);
                     // Call all existing users in voice chat
                     (users || []).forEach(user => {
                         if (user.peerId !== peerId && user.peerId) {
+                            console.log('📞 Calling existing user:', user.username, user.peerId);
                             callPeer(user.peerId);
                         }
                     });
@@ -451,7 +479,7 @@ const ChatView = ({
             }, 500);
 
         } catch (err) {
-            console.error('Error joining voice chat:', err);
+            console.error('❌ Error joining voice chat:', err);
             setVoiceError('Không thể tham gia voice chat. Vui lòng thử lại.');
             setIsConnectingVoice(false);
             setShowPermissionDialog(false);

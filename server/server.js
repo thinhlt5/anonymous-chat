@@ -271,43 +271,42 @@ io.on("connection", (socket) => {
     // ─────────────────────────────────────────────────────────────────
     // DISCONNECT - Handle user leaving and Self-Destruct mechanism
     // ─────────────────────────────────────────────────────────────────
-    // ─────────────────────────────────────────────────────────────────
-    // DISCONNECT - Handle user leaving and Self-Destruct mechanism
-    // ─────────────────────────────────────────────────────────────────
     socket.on("disconnect", () => {
         const roomName = socketRoomMap[socket.id];
+        logSystem(`🔌 Disconnect initiated for socket: ${socket.id}, room: ${roomName || 'UNKNOWN'}`);
 
-        // 1. Cleanup Voice Chat (Priority)
-        // Scan all voice rooms or the specific room for this socket ID
-        if (roomName && voiceChatRooms[roomName]) {
-            let foundPeerId = null;
-            let foundUsername = "Unknown";
-
-            // Find user in voice chat by socket.id
-            for (const [pId, info] of voiceChatRooms[roomName].entries()) {
+        // 1. AGGRESSIVE VOICE CHAT CLEANUP - Scan ALL rooms
+        // This ensures we catch ghost users even if socketRoomMap is corrupted
+        let cleanedVoiceRooms = 0;
+        for (const [vRoomName, voiceMap] of Object.entries(voiceChatRooms)) {
+            for (const [pId, info] of voiceMap.entries()) {
                 if (info.socketId === socket.id) {
-                    foundPeerId = pId;
-                    foundUsername = info.username;
-                    break;
+                    voiceMap.delete(pId);
+                    cleanedVoiceRooms++;
+
+                    logSystem(`🎤❌ Removed ${info.username} from voice chat in "${vRoomName}"`);
+
+                    // Notify others in voice chat
+                    socket.to(vRoomName).emit("user_left_voice", { 
+                        peerId: pId, 
+                        username: info.username 
+                    });
+
+                    // Send updated voice chat user list
+                    const voiceUsers = Array.from(voiceMap.values());
+                    io.to(vRoomName).emit("voice_chat_users", voiceUsers);
+
+                    // Clean up empty voice chat room
+                    if (voiceMap.size === 0) {
+                        delete voiceChatRooms[vRoomName];
+                        logSystem(`🗑️ Empty voice room "${vRoomName}" deleted`);
+                    }
                 }
             }
+        }
 
-            if (foundPeerId) {
-                voiceChatRooms[roomName].delete(foundPeerId);
-
-                // Notify others in voice chat
-                socket.to(roomName).emit("user_left_voice", { peerId: foundPeerId, username: foundUsername });
-
-                // Send updated voice chat user list
-                const voiceUsers = Array.from(voiceChatRooms[roomName].values());
-                io.to(roomName).emit("voice_chat_users", voiceUsers);
-
-                // Clean up empty voice chat room
-                if (voiceChatRooms[roomName].size === 0) {
-                    delete voiceChatRooms[roomName];
-                }
-                logSystem(`🔌 Disconnect cleanup: Removed ${foundUsername} from voice "${roomName}"`);
-            }
+        if (cleanedVoiceRooms > 0) {
+            logSystem(`✅ Cleaned ${cleanedVoiceRooms} voice chat connection(s)`);
         }
 
         // 2. Cleanup Main Room
