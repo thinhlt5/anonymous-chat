@@ -212,14 +212,15 @@ export const useVoiceChat = (socket, peer, peerId, roomName, username) => {
             // Listen for connection state changes (Critical for debugging WAN issues)
             call.peerConnection.oniceconnectionstatechange = () => {
                 const state = call.peerConnection.iceConnectionState;
-                console.log(`📡 ICE State (${remotePeerId}): ${state}`);
+                const peerId = call.peer;
+                console.log(`📡 ICE State (${peerId}): ${state}`);
                 
                 if (state === 'failed' || state === 'disconnected') {
-                    console.error(`❌ Connection failed with ${remotePeerId}. Possible TURN server issue.`);
+                    console.error(`❌ Connection failed with ${peerId}. Possible TURN server issue.`);
                     // Optional: Retry logic could go here
                 }
                 if (state === 'connected') {
-                    console.log(`✅ P2P Connection established with ${remotePeerId}!`);
+                    console.log(`✅ P2P Connection established with ${peerId}!`);
                 }
             };
             
