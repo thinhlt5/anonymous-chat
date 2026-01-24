@@ -33,9 +33,7 @@ const ChatView = ({
     setShowSettings,
     handleLeaveRoom,
     formatTime,
-    settings,
-    myPeer,
-    myPeerId
+    settings
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);

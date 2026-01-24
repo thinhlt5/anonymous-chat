@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import Peer from 'peerjs';
+// PeerJS removed
 
 // Import all views
 import {
@@ -73,11 +73,7 @@ function App() {
     darkMode: true,
   });
 
-  // PeerJS for Voice Calls
-  const [peer, setPeer] = useState(null);
-  const [peerId, setPeerId] = useState('');
-  const [inCall, setInCall] = useState(false);
-  const [incomingCall, setIncomingCall] = useState(null);
+  // PeerJS removed
 
   // ─────────────────────────────────────────────────────────────────
   // SOCKET EVENT LISTENERS
@@ -174,57 +170,7 @@ function App() {
     };
   }, [settings.soundEnabled]);
 
-  // ─────────────────────────────────────────────────────────────────
-  // INITIALIZE PEERJS
-  // ─────────────────────────────────────────────────────────────────
-  // ─────────────────────────────────────────────────────────────────
-  // INITIALIZE PEERJS
-  // ─────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    // 🔧 Use Self-Hosted PeerJS Server (Reliable Signaling) + Google STUN (Reliable NAT Traversal)
-    const socketUrl = getSocketUrl();
-    const isProduction = !socketUrl.includes('localhost');
-    
-    // Config for Self-Hosted Peering
-    const peerConfig = {
-      debug: 2,
-      host: isProduction ? 'anonymous-chat-w798.onrender.com' : 'localhost',
-      port: isProduction ? 443 : 3001,
-      path: '/peerjs', // Endpoint we set up in server.js
-      secure: isProduction, // Use WSS/HTTPS
-      config: {
-        iceServers: [
-          // 1. Google Public STUN (The Gold Standard)
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-        ],
-        iceCandidatePoolSize: 10,
-      }
-    };
-    
-    console.log("🔧 PeerJS Config Loaded (Self-Hosted):", peerConfig);
-
-    const peerInstance = new Peer(undefined, peerConfig);
-
-    // Standard Peer Connection
-    peerInstance.on('open', (id) => {
-      console.log('✅ Self-Hosted Peer Connected! ID: ' + id);
-      setPeerId(id);
-    });
-
-    peerInstance.on('error', (err) => {
-      console.error('PeerJS Error:', err);
-    });
-
-    setPeer(peerInstance);
-
-    return () => {
-      peerInstance.destroy();
-    };
-  }, []);
+  // PeerJS effect removed
 
   // ─────────────────────────────────────────────────────────────────
   // NAVIGATION
@@ -333,7 +279,7 @@ function App() {
       room: userData.room.trim(),
       password: userData.password || null,
       username: userData.username,
-      peerId: peerId
+      // peerId removed
     }, (response) => {
       setIsLoading(false);
       if (response.success) {
@@ -440,8 +386,7 @@ function App() {
               formatTime={formatTime}
               settings={settings}
               // Pass PeerJS instance from App
-              myPeer={peer} 
-              myPeerId={peerId}
+              // PeerJS props removed
             />
             {showSettings && (
               <SettingsModal
