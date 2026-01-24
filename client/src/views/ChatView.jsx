@@ -164,11 +164,18 @@ const ChatView = ({
         };
 
         const handleUserJoinedVoice = ({ peerId: newPeerId, username }) => {
-            // Don't call the new user - they will call us
-            // This prevents duplicate bidirectional calls which cause audio conflicts
-            console.log('ℹ️ New user joined voice:', username, '- waiting for their call');
+            console.log(`ℹ️ New user joined voice: ${username} (${newPeerId})`);
             
-            // Just refresh the voice chat users list
+            // Proactively call the new user (Dual-initiation strategy with dedupe)
+            if (newPeerId !== peerId && !activeCalls.has(newPeerId)) {
+                console.log(`📞 Proactively calling new user: ${username}`);
+                // Add random delay to minimize collision probability
+                setTimeout(() => {
+                    callPeer(newPeerId);
+                }, Math.random() * 500 + 100);
+            }
+            
+            // Refresh list
             socket.emit('get_voice_chat_users', { room: userData.room }, handleVoiceChatUsers);
         };
 
