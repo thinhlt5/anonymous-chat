@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
+
+
 // PeerJS removed
 
 // Import all views
@@ -419,6 +423,10 @@ function App() {
 
       {/* Main Content */}
       {renderView()}
+
+      {/* Vercel Analytics & Speed Insights */}
+      <Analytics />
+      <SpeedInsights />
     </div>
   );
 }

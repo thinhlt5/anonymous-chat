@@ -68,7 +68,17 @@ export const VoiceChat = ({ roomName, username }) => {
         getToken();
     }, [roomName, username]);
 
+    useEffect(() => {
+         console.log("🔗 LiveKit URL:", SERVER_URL); // Debug log
+    }, []);
+
     if (!token) return <div className="text-xs text-gray-500 animate-pulse">Getting token...</div>;
+    if (!SERVER_URL) return (
+        <div className="p-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500 text-xs text-center">
+            <p className="font-bold">Configuration Error</p>
+            <p>Missing VITE_LIVEKIT_URL in Vercel Env Vars.</p>
+        </div>
+    );
 
     return (
         <div className="flex flex-col items-center gap-2 p-3 bg-dark-surface/50 rounded-xl border border-neon-cyan/20">
