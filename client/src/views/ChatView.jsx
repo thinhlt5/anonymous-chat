@@ -266,51 +266,76 @@ const ChatView = ({
         audio.style.display = 'none';
         document.body.appendChild(audio);
 
-        // Setup audio analysis for remote user visualization
-        try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const audioCtx = new AudioContext();
-            
-            // Resume context immediately if suspended
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+        // setup shared AudioContext if needed
+        let audioCtx = audioContextRef.current;
+        if (!audioCtx) {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                audioContextRef.current = audioCtx;
+            } catch (e) {
+                console.warn('Could not create AudioContext, visualization disabled', e);
             }
+        }
 
-            const analyser = audioCtx.createAnalyser();
-            const source = audioCtx.createMediaStreamSource(stream);
-            
-            source.connect(analyser);
-            analyser.fftSize = 256;
-            
-            remoteAnalysersRef.current[peerId] = { analyser, audioCtx };
-            
-            // Start volume monitoring for this remote user
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-            const updateRemoteVolume = () => {
-                if (!remoteAnalysersRef.current[peerId]) return;
+        // Setup audio analysis for remote user visualization
+        if (audioCtx) {
+            try {
+                // Determine source: if existing analyzer exists, reuse or recreate?
+                // Best to simple create a source and analyzer for this specific steam
                 
-                analyser.getByteFrequencyData(dataArray);
-                let sum = 0;
-                for(let i = 0; i < dataArray.length; i++) {
-                    sum += dataArray[i];
+                // Close/disconnect previous analyzer for this peer if exists
+                if (remoteAnalysersRef.current[peerId]) {
+                    try {
+                        const old = remoteAnalysersRef.current[peerId];
+                        // old.source.disconnect(); // source can't be strictly disconnected from track easily but GC handles it
+                        old.analyser.disconnect();
+                    } catch(e) {}
                 }
-                const average = sum / dataArray.length;
-                const vol = Math.min(1, average / 50);
-                
-                setRemoteVolumes(prev => ({
-                    ...prev,
-                    [peerId]: vol
-                }));
-                
-                if (remoteAudioRefs.current[peerId]) {
-                    requestAnimationFrame(updateRemoteVolume);
+
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
                 }
-            };
-            updateRemoteVolume();
-            
-            console.log('🎵 Audio analyzer set up for peer:', peerId);
-        } catch (e) {
-            console.error('Failed to setup remote audio analysis', e);
+
+                const analyser = audioCtx.createAnalyser();
+                const source = audioCtx.createMediaStreamSource(stream);
+                
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                
+                remoteAnalysersRef.current[peerId] = { analyser, source }; // Store source to prevent GC
+                
+                // Start volume monitoring for this remote user
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                const updateRemoteVolume = () => {
+                    // Check if peer still exists in our refs
+                    if (!remoteAnalysersRef.current[peerId]) return;
+                    
+                    try {
+                        analyser.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        for(let i = 0; i < dataArray.length; i++) {
+                            sum += dataArray[i];
+                        }
+                        const average = sum / dataArray.length;
+                        const vol = Math.min(1, average / 50);
+                        
+                        setRemoteVolumes(prev => ({
+                            ...prev,
+                            [peerId]: vol
+                        }));
+                        
+                        requestAnimationFrame(updateRemoteVolume);
+                    } catch(e) {
+                        // Context might be closed
+                    }
+                };
+                updateRemoteVolume();
+                
+                console.log('🎵 Audio analyzer set up for peer:', peerId);
+            } catch (e) {
+                console.error('Failed to setup remote audio analysis', e);
+            }
         }
 
         // Try to play immediately
@@ -326,10 +351,7 @@ const ChatView = ({
                         // Store this unlock function globally or attach to a one-time click listener
                         const unlockAudio = () => {
                             audio.play().catch(e => console.error('Unlock failed', e));
-                            // Also resume any suspended contexts
-                            Object.values(remoteAnalysersRef.current).forEach(({ audioCtx }) => {
-                                if (audioCtx.state === 'suspended') audioCtx.resume();
-                            });
+                            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
                             document.removeEventListener('click', unlockAudio);
                             document.removeEventListener('touchstart', unlockAudio);
                         };
