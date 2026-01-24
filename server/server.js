@@ -7,7 +7,6 @@ const app = express();
 app.use(cors());
 const server = http.createServer(app);
 
-// 🚀 PeerJS Self-Hosted Server
 const { ExpressPeerServer } = require('peer');
 const peerServer = ExpressPeerServer(server, {
   debug: true,

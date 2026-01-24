@@ -185,9 +185,14 @@ function App() {
   // INITIALIZE PEERJS
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // ☁️ Use Public PeerJS Cloud (More reliable for Free Tier deployments)
+    // 🔧 Use Self-Hosted PeerJS Server on Render
+    const socketUrl = getSocketUrl();
     const peerConfig = {
       debug: 1,
+      host: socketUrl.includes('localhost') ? 'localhost' : 'anonymous-chat-w798.onrender.com',
+      port: socketUrl.includes('localhost') ? 3001 : 443,
+      path: '/peerjs',
+      secure: !socketUrl.includes('localhost'), // Use wss:// for production, ws:// for localhost
       config: {
         iceServers: [
           // Google Public STUN
