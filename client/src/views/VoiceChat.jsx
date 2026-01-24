@@ -216,8 +216,9 @@ export const useVoiceChat = (socket, peer, peerId, roomName, username) => {
                 console.log(`📡 ICE State (${peerId}): ${state}`);
                 
                 if (state === 'failed' || state === 'disconnected') {
-                    console.error(`❌ Connection failed with ${peerId}. Possible TURN server issue.`);
-                    // Optional: Retry logic could go here
+                    console.error(`❌ Connection failed with ${peerId}. Firewall blocked UDP. Trying TCP...`);
+                    // Note: PeerJS handles ICE restart automatically in some cases, 
+                    // but often a full page refresh is needed if STUN/TURN fails completely.
                 }
                 if (state === 'connected') {
                     console.log(`✅ P2P Connection established with ${peerId}!`);

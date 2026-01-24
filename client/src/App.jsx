@@ -188,12 +188,13 @@ function App() {
       debug: 2, // Check verbose logs
       config: {
         iceServers: [
-          // 🚀 OpenRelay (Primary TURN)
+          // 🚀 OpenRelay (Force TCP/TLS - Bypasses Firewalls)
           {
             urls: [
-              "stun:openrelay.metered.ca:80",
-              "turn:openrelay.metered.ca:80",
-              "turn:openrelay.metered.ca:443",
+              "turn:openrelay.metered.ca:443?transport=tcp",
+              "turn:openrelay.metered.ca:443?transport=udp",
+              "turn:openrelay.metered.ca:80?transport=tcp",
+              "turn:openrelay.metered.ca:80?transport=udp",
             ],
             username: "openrelayproject",
             credential: "openrelayproject",
