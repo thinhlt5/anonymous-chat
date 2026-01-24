@@ -181,23 +181,40 @@ function App() {
   // INITIALIZE PEERJS
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // ☁️ Use Public PeerJS Cloud (More reliable for Free Tier deployments)
+    // 🔧 Use Self-Hosted PeerJS Server on Render + Free TURN Servers
+    const socketUrl = getSocketUrl();
+    const isProduction = !socketUrl.includes('localhost');
+    
     const peerConfig = {
       debug: 1,
+      host: isProduction ? 'anonymous-chat-w798.onrender.com' : 'localhost',
+      port: isProduction ? 443 : 3001,
+      path: '/peerjs',
+      secure: isProduction,
       config: {
         iceServers: [
-          // Google Public STUN
+          // 🚀 OpenRelay (Free TURN Server) - Critical for WAN/Mobile connections
+          {
+            urls: "stun:openrelay.metered.ca:80",
+          },
+          {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+          },
+          {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+          },
+          {
+            urls: "turn:openrelay.metered.ca:443?transport=tcp",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+          },
+          // Google Public STUN (Fallback)
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          // Specialized STUN servers
-          { urls: 'stun:global.stun.twilio.com:3478' },
-          { urls: 'stun:stun.services.mozilla.com' },
-          { urls: 'stun:stun.stunprotocol.org:3478' },
-          { urls: 'stun:stun.framasoft.org:3478' },
-          { urls: 'stun:stun.ekiga.net' }
         ],
         iceCandidatePoolSize: 10,
       }
@@ -207,7 +224,7 @@ function App() {
 
     // Standard Peer Connection
     peerInstance.on('open', (id) => {
-      console.log('✅ Public Peer Connected! ID: ' + id);
+      console.log(`✅ ${isProduction ? 'Self-Hosted' : 'Local'} Peer Connected! ID: ` + id);
       setPeerId(id);
     });
 
