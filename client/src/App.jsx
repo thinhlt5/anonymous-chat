@@ -183,7 +183,14 @@ function App() {
   useEffect(() => {
     // Connect to SELF-HOSTED PeerServer on BACKEND
     // Parse the SOCKET_URL to get the correct backend host/port
-    const socketUrlObj = new URL(SOCKET_URL);
+    const socketVal = import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? "http://localhost:3001" : "/");
+    let socketUrlObj;
+    try {
+        socketUrlObj = new URL(socketVal.startsWith('http') ? socketVal : window.location.origin);
+    } catch (e) {
+        socketUrlObj = new URL(window.location.origin);
+    }
+    
     const isSecure = socketUrlObj.protocol === 'https:';
     
     const peerConfig = {
