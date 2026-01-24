@@ -351,15 +351,11 @@ const ChatView = ({
                         {enableVoice ? (
                             <div className="space-y-2">
                                 {/* LiveKit Component handles everything */}
-                                <VoiceChat roomName={userData.room} username={userData.username} />
-                                
-                                <button
-                                    onClick={() => setEnableVoice(false)}
-                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 mt-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
-                                >
-                                    <PhoneOff className="w-3 h-3" />
-                                    <span className="text-xs">Disconnect Voice</span>
-                                </button>
+                                <VoiceChat 
+                                    roomName={userData.room} 
+                                    username={userData.username}
+                                    onDisconnect={() => setEnableVoice(false)}
+                                />
                             </div>
                         ) : (
                             <>
