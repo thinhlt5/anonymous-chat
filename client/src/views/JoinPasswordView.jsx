@@ -29,17 +29,17 @@ const JoinPasswordView = ({
                     className="flex items-center gap-2 text-gray-400 hover:text-neon-cyan transition-colors mb-6"
                 >
                     <ChevronLeft className="w-5 h-5" />
-                    <span className="text-sm">RETURN</span>
+                    <span className="text-sm">GO BACK</span>
                 </button>
 
                 {/* Header */}
                 <div className="text-center mb-8">
                     <Lock className="w-12 h-12 mx-auto text-neon-yellow mb-4" />
                     <h2 className="text-2xl font-bold text-neon-yellow">
-                        ENCRYPTED CHANNEL
+                        PRIVATE ROOM
                     </h2>
                     <p className="text-gray-400 text-sm mt-2">
-                        This operation requires authentication
+                        This room requires authentication
                     </p>
                 </div>
 
@@ -47,7 +47,7 @@ const JoinPasswordView = ({
                 <div className="bg-dark-bg/50 rounded-lg p-4 mb-6 border border-neon-cyan/20">
                     <div className="flex items-center gap-2 text-sm">
                         <Terminal className="w-4 h-4 text-neon-cyan" />
-                        <span className="text-gray-400">Operation:</span>
+                        <span className="text-gray-400">Room:</span>
                         <span className="text-neon-cyan font-bold">{userData.room}</span>
                     </div>
                 </div>
@@ -58,7 +58,7 @@ const JoinPasswordView = ({
                     <div>
                         <label className="block text-neon-yellow text-sm mb-2 tracking-wider flex items-center gap-2">
                             <Lock className="w-4 h-4" />
-                            DECRYPTION KEY:
+                            PASSWORD:
                         </label>
                         <div className="relative">
                             <input
@@ -66,7 +66,7 @@ const JoinPasswordView = ({
                                 value={userData.password}
                                 onChange={(e) => setUserData({ ...userData, password: e.target.value })}
                                 onKeyDown={(e) => e.key === 'Enter' && userData.password && joinRoom()}
-                                placeholder="Enter access password..."
+                                placeholder="Enter password..."
                                 className="input-cyber pr-12"
                                 autoFocus
                                 maxLength={50}
@@ -98,12 +98,12 @@ const JoinPasswordView = ({
                         {isLoading ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                DECRYPTING...
+                                CONNECTING...
                             </>
                         ) : (
                             <>
                                 <Unlock className="w-5 h-5" />
-                                DECRYPT & CONNECT
+                                CONNECT
                             </>
                         )}
                     </button>
