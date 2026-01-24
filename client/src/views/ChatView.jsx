@@ -19,6 +19,7 @@ import {
     Users,
     Volume2,
     VolumeX,
+    Headphones 
 } from 'lucide-react';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -206,6 +207,13 @@ const ChatView = ({
 
     // Play remote audio stream (with iOS workaround)
     const playRemoteAudio = (peerId, stream) => {
+        // SAFETY CHECK: Never play own audio
+        if (peerId === myPeerId) {
+            console.warn('🛑 Prevented playing local audio stream');
+            return;
+        }
+        if (!peerId) return;
+
         if (remoteAudioRefs.current[peerId]) {
             // Audio element already exists - update the stream
             console.log('Updating existing audio stream for peer:', peerId);
@@ -430,9 +438,11 @@ const ChatView = ({
 
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
+                    echoCancellation: { ideal: true },
+                    noiseSuppression: { ideal: true },
+                    autoGainControl: { ideal: true },
+                    sampleRate: { ideal: 48000 },
+                    channelCount: { ideal: 1 }
                 }
             });
 
@@ -492,9 +502,18 @@ const ChatView = ({
             } else if (err.name === 'OverconstrainedError') {
                 // Try with simpler constraints
                 try {
-                    const simpleStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    return simpleStream;
-                } catch {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: false, 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                            sampleRate: 48000,
+                            channelCount: 1
+                        } 
+                    });
+                    return stream;
+                } catch (error) {
                     setVoiceError('Không thể sử dụng microphone.');
                 }
             } else if (err.name === 'TypeError') {
@@ -927,23 +946,29 @@ const ChatView = ({
                             </div>
                         </div>
                     ) : (
-                        <button
-                            onClick={joinVoiceChat}
-                            disabled={isConnectingVoice}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-neon-green/10 text-neon-green border border-neon-green/30 rounded-lg hover:bg-neon-green/20 transition-colors disabled:opacity-50"
-                        >
-                            {isConnectingVoice ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-neon-green/30 border-t-neon-green rounded-full animate-spin" />
-                                    <span className="text-sm">Connecting...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Phone className="w-4 h-4" />
-                                    <span className="text-sm">Join Voice Chat</span>
-                                </>
-                            )}
-                        </button>
+                        <>
+                            <button
+                                onClick={joinVoiceChat}
+                                disabled={isConnectingVoice}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-neon-green/10 text-neon-green border border-neon-green/30 rounded-lg hover:bg-neon-green/20 transition-colors disabled:opacity-50"
+                            >
+                                {isConnectingVoice ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-neon-green/30 border-t-neon-green rounded-full animate-spin" />
+                                        <span className="text-sm">Connecting...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Phone className="w-4 h-4" />
+                                        <span className="text-sm">Join Voice Chat</span>
+                                    </>
+                                )}
+                            </button>
+                            <p className="text-[10px] text-gray-500 text-center mt-2 flex items-center justify-center gap-1">
+                                <Headphones className="w-3 h-3" />
+                                Đeo tai nghe để tránh bị vọng tiếng
+                            </p>
+                        </>
                     )}
                 </div>
 

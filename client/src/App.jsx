@@ -181,23 +181,8 @@ function App() {
   // INITIALIZE PEERJS
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Connect to SELF-HOSTED PeerServer on BACKEND
-    // Parse the SOCKET_URL to get the correct backend host/port
-    const socketVal = import.meta.env.VITE_SOCKET_URL || (window.location.hostname === 'localhost' ? "http://localhost:3001" : "/");
-    let socketUrlObj;
-    try {
-        socketUrlObj = new URL(socketVal.startsWith('http') ? socketVal : window.location.origin);
-    } catch (e) {
-        socketUrlObj = new URL(window.location.origin);
-    }
-    
-    const isSecure = socketUrlObj.protocol === 'https:';
-    
+    // ☁️ Use Public PeerJS Cloud (More reliable for Free Tier deployments)
     const peerConfig = {
-      host: socketUrlObj.hostname,
-      port: socketUrlObj.port || (isSecure ? 443 : 80),
-      path: '/peerjs', // Endpoint we set up in server.js
-      secure: isSecure,
       debug: 1,
       config: {
         iceServers: [
@@ -220,9 +205,9 @@ function App() {
 
     const peerInstance = new Peer(undefined, peerConfig);
 
-    // Patch for inconsistent ID generation
+    // Standard Peer Connection
     peerInstance.on('open', (id) => {
-      console.log('✅ Self-Hosted Peer Connected! ID: ' + id);
+      console.log('✅ Public Peer Connected! ID: ' + id);
       setPeerId(id);
     });
 
