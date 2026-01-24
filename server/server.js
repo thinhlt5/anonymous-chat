@@ -7,6 +7,14 @@ const app = express();
 app.use(cors());
 const server = http.createServer(app);
 
+// 🚀 PeerJS Self-Hosted Server
+const { ExpressPeerServer } = require('peer');
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
+  path: '/'
+});
+app.use('/peerjs', peerServer);
+
 const io = new Server(server, {
     cors: { origin: "*" },
     maxHttpBufferSize: 10 * 1024 * 1024 // Max file/image size: 10MB

@@ -181,9 +181,17 @@ function App() {
   // INITIALIZE PEERJS
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Production-ready PeerJS config
+    // Connect to SELF-HOSTED PeerServer on BACKEND
+    // Parse the SOCKET_URL to get the correct backend host/port
+    const socketUrlObj = new URL(SOCKET_URL);
+    const isSecure = socketUrlObj.protocol === 'https:';
+    
     const peerConfig = {
-      debug: 1, // Errors only
+      host: socketUrlObj.hostname,
+      port: socketUrlObj.port || (isSecure ? 443 : 80),
+      path: '/peerjs', // Endpoint we set up in server.js
+      secure: isSecure,
+      debug: 1,
       config: {
         iceServers: [
           // Google Public STUN
@@ -205,8 +213,9 @@ function App() {
 
     const peerInstance = new Peer(undefined, peerConfig);
 
+    // Patch for inconsistent ID generation
     peerInstance.on('open', (id) => {
-      console.log('My Peer ID is: ' + id);
+      console.log('✅ Self-Hosted Peer Connected! ID: ' + id);
       setPeerId(id);
     });
 
