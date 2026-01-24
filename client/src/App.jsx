@@ -181,11 +181,17 @@ function App() {
   // INITIALIZE PEERJS
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // 🔧 Use Public PeerJS Cloud + Free TURN Servers (Best of both worlds)
-    // This allows easy discovery (Public) but reliable connection (TURN)
+    // 🔧 Use Self-Hosted PeerJS Server (Reliable Signaling) + Google STUN (Reliable NAT Traversal)
+    const socketUrl = getSocketUrl();
+    const isProduction = !socketUrl.includes('localhost');
     
+    // Config for Self-Hosted Peering
     const peerConfig = {
       debug: 2,
+      host: isProduction ? 'anonymous-chat-w798.onrender.com' : 'localhost',
+      port: isProduction ? 443 : 3001,
+      path: '/peerjs', // Endpoint we set up in server.js
+      secure: isProduction, // Use WSS/HTTPS
       config: {
         iceServers: [
           // 1. Google Public STUN (The Gold Standard)
@@ -194,21 +200,18 @@ function App() {
           { urls: 'stun:stun2.l.google.com:19302' },
           { urls: 'stun:stun3.l.google.com:19302' },
           { urls: 'stun:stun4.l.google.com:19302' },
-          
-          // 2. Twilio Public STUN (Enterprise Grade)
-          { urls: 'stun:global.stun.twilio.com:3478' },
         ],
         iceCandidatePoolSize: 10,
       }
     };
     
-    console.log("🔧 PeerJS Config Loaded:", peerConfig); // Validate config
+    console.log("🔧 PeerJS Config Loaded (Self-Hosted):", peerConfig);
 
     const peerInstance = new Peer(undefined, peerConfig);
 
     // Standard Peer Connection
     peerInstance.on('open', (id) => {
-      console.log('✅ Public Peer Connected (with TURN)! ID: ' + id);
+      console.log('✅ Self-Hosted Peer Connected! ID: ' + id);
       setPeerId(id);
     });
 
