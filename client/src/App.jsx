@@ -37,7 +37,10 @@ const socket = io(getSocketUrl(), {
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
-  transports: ['websocket']
+  transports: ['websocket', 'polling'], // Try WebSocket first, fallback to polling
+  upgrade: true, // Allow upgrade from polling to WebSocket
+  forceNew: true, // Force new connection
+  timeout: 20000, // Increase timeout for slow connections
 });
 
 // ═══════════════════════════════════════════════════════════════════

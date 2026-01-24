@@ -83,12 +83,12 @@ const ChatView = ({
         if (messageInput.trim()) {
             socket.emit('send_message', {
                 room: userData.room,
-                content: messageInput,
-                sender: userData.username
+                message: messageInput,
+                username: userData.username
             });
             setMessageInput('');
             setIsTyping(false);
-            socket.emit('typing', { room: userData.room, username: userData.username, isTyping: false });
+            socket.emit('typing_stop', { room: userData.room, username: userData.username });
         }
     };
 
@@ -97,13 +97,13 @@ const ChatView = ({
 
         if (!isTyping && e.target.value.length > 0) {
             setIsTyping(true);
-            socket.emit('typing', { room: userData.room, username: userData.username, isTyping: true });
+            socket.emit('typing_start', { room: userData.room, username: userData.username });
         }
 
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => {
             setIsTyping(false);
-            socket.emit('typing', { room: userData.room, username: userData.username, isTyping: false });
+            socket.emit('typing_stop', { room: userData.room, username: userData.username });
         }, 1000);
     };
 
