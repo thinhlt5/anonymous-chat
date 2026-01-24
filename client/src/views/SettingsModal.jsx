@@ -83,29 +83,15 @@ const SettingsModal = ({
                         </div>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Agent:</span>
+                                <span className="text-gray-400">Your nickname:</span>
                                 <span className="text-neon-cyan">{userData.username}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Operation:</span>
+                                <span className="text-gray-400">Room name:</span>
                                 <span className="text-neon-pink">{userData.room}</span>
                             </div>
                         </div>
                     </div>
-
-                    {/* Self-Destruct Button */}
-                    <button
-                        onClick={handleLeaveRoom}
-                        className="btn-danger w-full flex items-center justify-center gap-3"
-                    >
-                        <Skull className="w-5 h-5" />
-                        SELF-DESTRUCT (LOGOUT)
-                    </button>
-
-                    <p className="text-xs text-gray-500 text-center">
-                        This will terminate your session and leave the operation.<br />
-                        If you're the last agent, the room will be destroyed.
-                    </p>
                 </div>
             </div>
         </div>

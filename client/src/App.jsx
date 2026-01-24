@@ -203,7 +203,7 @@ function App() {
   // ─────────────────────────────────────────────────────────────────
   const handleCreateRoom = () => {
     if (!userData.room.trim()) {
-      setError('Operation name required.');
+      setError('Room name required.');
       return;
     }
 
@@ -226,7 +226,7 @@ function App() {
 
   const handleCheckRoom = () => {
     if (!userData.room.trim()) {
-      setError('Operation ID required.');
+      setError('Room name required.');
       return;
     }
 
@@ -236,7 +236,7 @@ function App() {
     socket.emit('check_room', { room: userData.room.trim() }, (response) => {
       setIsLoading(false);
       if (!response.exists) {
-        setError('Operation not found. Invalid coordinates.');
+        setError('Room not found.');
         return;
       }
 

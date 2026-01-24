@@ -8,8 +8,6 @@ import {
     Image,
     Phone,
     PhoneOff,
-    PhoneIncoming,
-    PhoneOutgoing,
     Mic,
     MicOff,
     Settings,
@@ -71,7 +69,6 @@ const ChatView = ({
     useEffect(() => {
         setPeerStatus('connecting');
 
-        // Use a more reliable PeerJS configuration for mobile
         const peerConfig = {
             debug: 2,
             config: {
@@ -299,7 +296,7 @@ const ChatView = ({
         try {
             // Check HTTPS first
             if (!isSecureContext()) {
-                setVoiceError('⚠️ Voice chat yêu cầu HTTPS. Trên điện thoại, bạn cần truy cập qua HTTPS hoặc localhost.');
+                setVoiceError('Voice chat yêu cầu HTTPS. Trên điện thoại, bạn cần truy cập qua HTTPS hoặc localhost.');
                 return null;
             }
 
@@ -341,7 +338,7 @@ const ChatView = ({
                     setVoiceError('Không thể sử dụng microphone.');
                 }
             } else if (err.name === 'TypeError') {
-                setVoiceError('⚠️ Cần HTTPS để sử dụng microphone trên mobile.');
+                setVoiceError('Cần HTTPS để sử dụng microphone trên mobile.');
             } else if (err.name === 'AbortError') {
                 setVoiceError('Yêu cầu microphone bị hủy. Vui lòng thử lại.');
             } else {
@@ -358,7 +355,7 @@ const ChatView = ({
 
         // Check HTTPS first
         if (!isSecureContext()) {
-            setVoiceError('⚠️ Voice chat yêu cầu kết nối an toàn (HTTPS).\n\nTrên điện thoại, hãy đảm bảo bạn đang truy cập qua HTTPS.');
+            setVoiceError('Voice chat yêu cầu kết nối an toàn (HTTPS).\n\nTrên điện thoại, hãy đảm bảo bạn đang truy cập qua HTTPS.');
             return;
         }
 
@@ -373,7 +370,7 @@ const ChatView = ({
         console.log('Permission status:', permissionStatus);
 
         if (permissionStatus === 'denied') {
-            setVoiceError('🎤 Quyền microphone đã bị từ chối.\n\n📱 Để bật lại trên Chrome Mobile:\n1. Nhấn vào biểu tượng 🔒 bên cạnh URL\n2. Nhấn "Quyền trang web"\n3. Cho phép Microphone');
+            setVoiceError('Quyền microphone đã bị từ chối.\n\n📱 Để bật lại trên Chrome Mobile:\n1. Nhấn vào biểu tượng 🔒 bên cạnh URL\n2. Nhấn "Quyền trang web"\n3. Cho phép Microphone');
             return;
         }
 
@@ -576,7 +573,7 @@ const ChatView = ({
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
                         <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                        <span>{roomUsers.length} agent{roomUsers.length !== 1 ? 's' : ''} online</span>
+                        <span>{roomUsers.length} user{roomUsers.length !== 1 ? 's' : ''} online</span>
                     </div>
                 </div>
 
@@ -619,7 +616,7 @@ const ChatView = ({
                     {!window.isSecureContext && window.location.hostname !== 'localhost' && (
                         <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                             <p className="text-xs text-yellow-400">
-                                ⚠️ Cần HTTPS để voice chat trên mobile
+                                Cần HTTPS để voice chat trên mobile
                             </p>
                         </div>
                     )}
@@ -721,7 +718,7 @@ const ChatView = ({
                 <div className="flex-1 overflow-y-auto p-4">
                     <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                         <Users className="w-4 h-4" />
-                        ACTIVE AGENTS
+                        ACTIVE USERS
                     </h3>
                     <div className="space-y-2">
                         {roomUsers.map((user) => (
@@ -768,7 +765,8 @@ const ChatView = ({
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                     >
                         <LogOut className="w-4 h-4" />
-                        Leave Operation
+                        
+                        Leave the room
                     </button>
                 </div>
             </div>
@@ -779,7 +777,7 @@ const ChatView = ({
                 <div className="h-16 bg-dark-panel border-b border-neon-cyan/20 flex items-center justify-between px-4 md:px-6">
                     <div className="flex items-center gap-4 ml-12 md:ml-0">
                         <h1 className="text-base md:text-xl font-bold text-white truncate">
-                            <span className="hidden sm:inline">OPERATION: </span>
+                            <span className="hidden sm:inline">Room name: </span>
                             <span className="text-neon-cyan">{userData.room}</span>
                         </h1>
                     </div>
