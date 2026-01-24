@@ -271,20 +271,32 @@ io.on("connection", (socket) => {
     // ─────────────────────────────────────────────────────────────────
     // DISCONNECT - Handle user leaving and Self-Destruct mechanism
     // ─────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
+    // DISCONNECT - Handle user leaving and Self-Destruct mechanism
+    // ─────────────────────────────────────────────────────────────────
     socket.on("disconnect", () => {
         const roomName = socketRoomMap[socket.id];
 
-        if (roomName && rooms[roomName]) {
-            const user = rooms[roomName].users.get(socket.id);
-            const username = user ? user.username : "Unknown Agent";
-            const userPeerId = user ? user.peerId : null;
+        // 1. Cleanup Voice Chat (Priority)
+        // Scan all voice rooms or the specific room for this socket ID
+        if (roomName && voiceChatRooms[roomName]) {
+            let foundPeerId = null;
+            let foundUsername = "Unknown";
 
-            // Remove user from voice chat if in it
-            if (voiceChatRooms[roomName] && userPeerId) {
-                voiceChatRooms[roomName].delete(userPeerId);
+            // Find user in voice chat by socket.id
+            for (const [pId, info] of voiceChatRooms[roomName].entries()) {
+                if (info.socketId === socket.id) {
+                    foundPeerId = pId;
+                    foundUsername = info.username;
+                    break;
+                }
+            }
+
+            if (foundPeerId) {
+                voiceChatRooms[roomName].delete(foundPeerId);
 
                 // Notify others in voice chat
-                socket.to(roomName).emit("user_left_voice", { peerId: userPeerId, username });
+                socket.to(roomName).emit("user_left_voice", { peerId: foundPeerId, username: foundUsername });
 
                 // Send updated voice chat user list
                 const voiceUsers = Array.from(voiceChatRooms[roomName].values());
@@ -294,7 +306,14 @@ io.on("connection", (socket) => {
                 if (voiceChatRooms[roomName].size === 0) {
                     delete voiceChatRooms[roomName];
                 }
+                logSystem(`🔌 Disconnect cleanup: Removed ${foundUsername} from voice "${roomName}"`);
             }
+        }
+
+        // 2. Cleanup Main Room
+        if (roomName && rooms[roomName]) {
+            const user = rooms[roomName].users.get(socket.id);
+            const username = user ? user.username : "Unknown Agent";
 
             // Remove user from room
             rooms[roomName].users.delete(socket.id);

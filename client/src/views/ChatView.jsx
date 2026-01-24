@@ -64,6 +64,10 @@ const ChatView = ({
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const typingTimeoutRef = useRef(null);
+    const audioContextRef = useRef(null);
+    const analyserRef = useRef(null);
+    const volumeIntervalRef = useRef(null);
+    const [micVolume, setMicVolume] = useState(0);
 
     // Refs to access current values in callbacks (avoid stale closures)
     const localStreamRef = useRef(null);
@@ -142,7 +146,9 @@ const ChatView = ({
 
         const handleUserJoinedVoice = ({ peerId: newPeerId, username }) => {
             // Call the new user if we're in voice chat
-            if (inVoiceChat && localStream && peer && newPeerId !== peerId) {
+            // Use refs to ensure we have the latest stream without depending on closure scope
+            if (peerRef.current && localStreamRef.current && newPeerId !== peerId) {
+                console.log('New user joined voice, calling:', newPeerId);
                 callPeer(newPeerId);
             }
             // Refresh voice chat users
@@ -180,7 +186,7 @@ const ChatView = ({
             socket.off('user_left_voice', handleUserLeftVoice);
             if (syncInterval) clearInterval(syncInterval);
         };
-    }, [inVoiceChat, localStream, peer, peerId, userData.room]);
+    }, [inVoiceChat, userData.room]); // Removed peer, localStream dependencies as we use refs
 
     // Play remote audio stream (with iOS workaround)
     const playRemoteAudio = (peerId, stream) => {
@@ -304,6 +310,46 @@ const ChatView = ({
 
             console.log('Microphone access granted, tracks:', stream.getAudioTracks().length);
             setDebugInfo(`Mic OK: ${stream.getAudioTracks().length} track(s)`);
+
+            // Setup Audio Analysis for Visualization
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+                const analyser = audioCtx.createAnalyser();
+                const source = audioCtx.createMediaStreamSource(stream);
+                
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                
+                audioContextRef.current = audioCtx;
+                analyserRef.current = analyser;
+
+                // Start volume monitoring loop
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                const updateVolume = () => {
+                    if (!analyserRef.current) return;
+                    analyserRef.current.getByteFrequencyData(dataArray);
+                    
+                    // simple average
+                    let sum = 0;
+                    for(let i = 0; i < dataArray.length; i++) {
+                        sum += dataArray[i];
+                    }
+                    const average = sum / dataArray.length;
+                    
+                    // Normalize to 0-1 range roughly
+                    const vol = Math.min(1, average / 50); 
+                    setMicVolume(vol);
+                    
+                    if (inVoiceChat || localStreamRef.current) {
+                        volumeIntervalRef.current = requestAnimationFrame(updateVolume);
+                    }
+                };
+                updateVolume();
+                
+            } catch (e) {
+                console.error("Audio visualization setup failed", e);
+            }
 
             return stream;
         } catch (err) {
@@ -431,6 +477,17 @@ const ChatView = ({
         Object.keys(remoteAudioRefs.current).forEach(key => {
             removeRemoteAudio(key);
         });
+
+        // Cleanup visualization
+        if (volumeIntervalRef.current) {
+            cancelAnimationFrame(volumeIntervalRef.current);
+            volumeIntervalRef.current = null;
+        }
+        if (audioContextRef.current) {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
+        setMicVolume(0);
 
         setInVoiceChat(false);
         setIsMuted(false);
@@ -670,6 +727,17 @@ const ChatView = ({
                                 >
                                     {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                                     <span className="text-xs">{isMuted ? 'Muted' : 'Unmute'}</span>
+                                    {/* Mic Visualizer Ring */}
+                                    {!isMuted && (
+                                        <div 
+                                            className="absolute inset-0 rounded-lg border-2 border-neon-green pointer-events-none transition-all duration-75"
+                                            style={{
+                                                opacity: micVolume + 0.2,
+                                                transform: `scale(${1 + micVolume * 0.1})`,
+                                                borderColor: `rgba(0, 255, 65, ${micVolume})`
+                                            }}
+                                        />
+                                    )}
                                 </button>
                                 <button
                                     onClick={leaveVoiceChat}
