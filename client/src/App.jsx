@@ -185,30 +185,31 @@ function App() {
     // This allows easy discovery (Public) but reliable connection (TURN)
     
     const peerConfig = {
-      debug: 2, // Check verbose logs
+      debug: 2,
       config: {
         iceServers: [
-          // 🚀 OpenRelay (Force TCP/TLS - Bypasses Firewalls)
-          {
-            urls: [
-              "turn:openrelay.metered.ca:443?transport=tcp",
-              "turn:openrelay.metered.ca:443?transport=udp",
-              "turn:openrelay.metered.ca:80?transport=tcp",
-              "turn:openrelay.metered.ca:80?transport=udp",
-            ],
-            username: "openrelayproject",
-            credential: "openrelayproject",
-          },
-          // 🛡️ Metered.ca (Backup TURN - Public Free)
-          {
-            urls: "stun:stun.relay.metered.ca:80",
-          },
-          // Google Public STUN (Standard)
+          // 1. Google STUN (Reliable Signaling)
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
+          
+          // 2. OpenRelay TURN (Standard UDP)
+          {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          },
+          {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          },
+
+          // 3. OpenRelay TURN (TCP - Backup)
+          {
+            urls: "turn:openrelay.metered.ca:443?transport=tcp",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          }
         ],
         iceCandidatePoolSize: 10,
       }
