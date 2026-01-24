@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import Peer from 'peerjs';
+import { useVoiceChat } from './VoiceChat';
 import {
     Ghost,
     Send,
@@ -43,44 +43,25 @@ const ChatView = ({
     const [isTyping, setIsTyping] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    // Voice Chat State
-    const [inVoiceChat, setInVoiceChat] = useState(false);
-    const [isMuted, setIsMuted] = useState(false);
-    const [voiceChatUsers, setVoiceChatUsers] = useState([]);
-    const [localStream, setLocalStream] = useState(null);
-    
-    // Use props instead of local state for peer
-    const peer = myPeer;
-    const peerId = myPeerId;
-    
-    const [activeCalls, setActiveCalls] = useState(new Map());
-    const [isConnectingVoice, setIsConnectingVoice] = useState(false);
-    const [voiceError, setVoiceError] = useState('');
-    const [showPermissionDialog, setShowPermissionDialog] = useState(false);
-    const [peerStatus, setPeerStatus] = useState('connecting'); // 'connecting', 'connected', 'error'
-    const [debugInfo, setDebugInfo] = useState('');
+    // Voice Chat - using new simplified hook
+    const {
+        inVoiceChat,
+        isMuted,
+        voiceChatUsers,
+        joinVoiceChat,
+        leaveVoiceChat,
+        toggleMute
+    } = useVoiceChat(socket, myPeer, myPeerId, userData.room, userData.username);
 
-    // Audio refs for remote streams
-    const remoteAudioRefs = useRef({});
+    // DOM refs
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const typingTimeoutRef = useRef(null);
-    const audioContextRef = useRef(null);
-    const analyserRef = useRef(null);
-    const volumeIntervalRef = useRef(null);
-    const [micVolume, setMicVolume] = useState(0);
-    
-    // Track remote user volumes for visualization
-    const remoteAnalysersRef = useRef({});
-    const [remoteVolumes, setRemoteVolumes] = useState({});
 
-    // Refs to access current values in callbacks (avoid stale closures)
-    const localStreamRef = useRef(null);
-    const peerRef = useRef(null);
-    const peerIdRef = useRef('');
-
-    // Initialize PeerJS
-    // Initialize PeerJS Listeners for ChatView
+    // Auto-scroll to bottom when new messages arrive
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
     useEffect(() => {
         if (!peer) {
             setPeerStatus('connecting');
