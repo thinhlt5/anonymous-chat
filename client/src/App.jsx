@@ -188,28 +188,15 @@ function App() {
       debug: 2,
       config: {
         iceServers: [
-          // 1. Google STUN (Reliable Signaling)
+          // 1. Google Public STUN (The Gold Standard)
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
           
-          // 2. OpenRelay TURN (Standard UDP)
-          {
-            urls: "turn:openrelay.metered.ca:80",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-          },
-          {
-            urls: "turn:openrelay.metered.ca:443",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-          },
-
-          // 3. OpenRelay TURN (TCP - Backup)
-          {
-            urls: "turn:openrelay.metered.ca:443?transport=tcp",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-          }
+          // 2. Twilio Public STUN (Enterprise Grade)
+          { urls: 'stun:global.stun.twilio.com:3478' },
         ],
         iceCandidatePoolSize: 10,
       }
