@@ -163,13 +163,11 @@ const ChatView = ({
         };
 
         const handleUserJoinedVoice = ({ peerId: newPeerId, username }) => {
-            // Call the new user if we're in voice chat
-            // Use refs to ensure we have the latest stream without depending on closure scope
-            if (peerRef.current && localStreamRef.current && newPeerId !== peerId) {
-                console.log('New user joined voice, calling:', newPeerId);
-                callPeer(newPeerId);
-            }
-            // Refresh voice chat users
+            // Don't call the new user - they will call us
+            // This prevents duplicate bidirectional calls which cause audio conflicts
+            console.log('ℹ️ New user joined voice:', username, '- waiting for their call');
+            
+            // Just refresh the voice chat users list
             socket.emit('get_voice_chat_users', { room: userData.room }, handleVoiceChatUsers);
         };
 
@@ -208,85 +206,90 @@ const ChatView = ({
 
     // Play remote audio stream (with iOS workaround)
     const playRemoteAudio = (peerId, stream) => {
-        if (!remoteAudioRefs.current[peerId]) {
-            console.log('🔊 Setting up audio for peer:', peerId);
-            const audio = new Audio();
+        if (remoteAudioRefs.current[peerId]) {
+            // Audio element already exists - update the stream
+            console.log('� Updating existing audio stream for peer:', peerId);
+            const audio = remoteAudioRefs.current[peerId];
             audio.srcObject = stream;
-            audio.autoplay = true;
-            audio.playsInline = true; // Important for iOS
-            audio.volume = 1.0; // Ensure volume is at max
-
-            // Setup audio analysis for remote user visualization
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioCtx = new AudioContext();
-                const analyser = audioCtx.createAnalyser();
-                const source = audioCtx.createMediaStreamSource(stream);
-                
-                source.connect(analyser);
-                analyser.fftSize = 256;
-                
-                remoteAnalysersRef.current[peerId] = { analyser, audioCtx };
-                
-                // Start volume monitoring for this remote user
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                const updateRemoteVolume = () => {
-                    if (!remoteAnalysersRef.current[peerId]) return;
-                    
-                    analyser.getByteFrequencyData(dataArray);
-                    let sum = 0;
-                    for(let i = 0; i < dataArray.length; i++) {
-                        sum += dataArray[i];
-                    }
-                    const average = sum / dataArray.length;
-                    const vol = Math.min(1, average / 50);
-                    
-                    setRemoteVolumes(prev => ({
-                        ...prev,
-                        [peerId]: vol
-                    }));
-                    
-                    if (remoteAudioRefs.current[peerId]) {
-                        requestAnimationFrame(updateRemoteVolume);
-                    }
-                };
-                updateRemoteVolume();
-                
-                console.log('🎵 Audio analyzer set up for peer:', peerId);
-            } catch (e) {
-                console.error('Failed to setup remote audio analysis', e);
-            }
-
-            // Try to play immediately
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        console.log('✅ Audio playing successfully for peer:', peerId);
-                    })
-                    .catch(err => {
-                        console.warn('⚠️ Audio autoplay blocked for peer:', peerId, err);
-                        // Add fallback for both mobile and desktop
-                        const playOnInteraction = () => {
-                            audio.play()
-                                .then(() => {
-                                    console.log('✅ Audio started after user interaction');
-                                    document.removeEventListener('click', playOnInteraction);
-                                    document.removeEventListener('touchstart', playOnInteraction);
-                                })
-                                .catch(() => {});
-                        };
-                        
-                        document.addEventListener('touchstart', playOnInteraction, { once: true });
-                        document.addEventListener('click', playOnInteraction, { once: true });
-                    });
-            }
-
-            remoteAudioRefs.current[peerId] = audio;
-            console.log('🎧 Remote audio element created for peer:', peerId);
-        } else {
-            console.log('⚠️ Audio already exists for peer:', peerId);
+            audio.play().catch(err => console.warn('Play after update failed:', err));
+            return;
         }
+        
+        console.log('🔊 Setting up audio for peer:', peerId);
+        const audio = new Audio();
+        audio.srcObject = stream;
+        audio.autoplay = true;
+        audio.playsInline = true; // Important for iOS
+        audio.volume = 1.0; // Ensure volume is at max
+
+        // Setup audio analysis for remote user visualization
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
+            const analyser = audioCtx.createAnalyser();
+            const source = audioCtx.createMediaStreamSource(stream);
+            
+            source.connect(analyser);
+            analyser.fftSize = 256;
+            
+            remoteAnalysersRef.current[peerId] = { analyser, audioCtx };
+            
+            // Start volume monitoring for this remote user
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const updateRemoteVolume = () => {
+                if (!remoteAnalysersRef.current[peerId]) return;
+                
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for(let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
+                }
+                const average = sum / dataArray.length;
+                const vol = Math.min(1, average / 50);
+                
+                setRemoteVolumes(prev => ({
+                    ...prev,
+                    [peerId]: vol
+                }));
+                
+                if (remoteAudioRefs.current[peerId]) {
+                    requestAnimationFrame(updateRemoteVolume);
+                }
+            };
+            updateRemoteVolume();
+            
+            console.log('🎵 Audio analyzer set up for peer:', peerId);
+        } catch (e) {
+            console.error('Failed to setup remote audio analysis', e);
+        }
+
+        // Try to play immediately
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise
+                .then(() => {
+                    console.log('✅ Audio playing successfully for peer:', peerId);
+                })
+                .catch(err => {
+                    console.warn('⚠️ Audio autoplay blocked for peer:', peerId, err);
+                    // Add fallback for both mobile and desktop
+                    const playOnInteraction = () => {
+                        audio.play()
+                            .then(() => {
+                                console.log('✅ Audio started after user interaction');
+                                document.removeEventListener('click', playOnInteraction);
+                                document.removeEventListener('touchstart', playOnInteraction);
+                            })
+                            .catch(() => {});
+                    };
+                    
+                    document.addEventListener('touchstart', playOnInteraction, { once: true });
+                    document.addEventListener('click', playOnInteraction, { once: true });
+                });
+        }
+
+        remoteAudioRefs.current[peerId] = audio;
+        console.log('🎧 Remote audio element created for peer:', peerId);
     };
 
     // Remove remote audio stream
