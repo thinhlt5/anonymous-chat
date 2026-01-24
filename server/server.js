@@ -162,10 +162,15 @@ io.on("connection", (socket) => {
     // ─────────────────────────────────────────────────────────────────
     // SEND MESSAGE - Broadcast chat message to room
     // ─────────────────────────────────────────────────────────────────
-    socket.on("send_message", ({ message, username, room }) => {
+    socket.on("send_message", (data) => {
+        // Support both old 'content' and new 'message' formats
+        const rawMessage = data.message || data.content;
+        const rawUsername = data.username || data.sender;
+        const room = data.room;
+
         // Safe guard against crash
-        const safeMessage = message || ""; 
-        const safeUsername = username || "Anonymous";
+        const safeMessage = rawMessage || ""; 
+        const safeUsername = rawUsername || "Anonymous";
         const safeRoom = room || "Unknown";
 
         const messageData = {
