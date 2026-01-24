@@ -122,11 +122,25 @@ const ChatView = ({
 
         const handleError = (err) => {
             console.error('PeerJS Error:', err);
-            setPeerStatus('error');
-            setDebugInfo(`PeerJS Error: ${err.type}`);
-
-            if (err.type === 'network' || err.type === 'server-error') {
+            
+            // Distinguish between fatal and non-fatal errors
+            if (err.type === 'peer-unavailable') {
+                // Non-fatal: remote peer not found, just log it
+                console.warn('⚠️ Peer unavailable (user probably disconnected):', err.message);
+                // Don't change peer status, this is expected behavior
+                return;
+            }
+            
+            // Fatal errors that affect our peer instance
+            if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error') {
+                setPeerStatus('error');
+                setDebugInfo(`PeerJS Error: ${err.type}`);
                 setVoiceError('Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.');
+            } else if (err.type === 'disconnected') {
+                setPeerStatus('connecting');
+                setDebugInfo('Reconnecting...');
+            } else {
+                console.warn('Non-critical PeerJS error:', err.type);
             }
         };
 
@@ -327,11 +341,19 @@ const ChatView = ({
 
             call.on('error', (err) => {
                 console.error('Call to', targetPeerId, 'error:', err);
+                // Clean up this specific call, don't crash the whole peer
+                removeRemoteAudio(targetPeerId);
+                setActiveCalls(prev => {
+                    const newMap = new Map(prev);
+                    newMap.delete(targetPeerId);
+                    return newMap;
+                });
             });
 
             setActiveCalls(prev => new Map(prev).set(targetPeerId, call));
         } catch (err) {
             console.error('Error calling peer:', err);
+            // Don't let this crash the whole voice chat
         }
     };
 
@@ -529,7 +551,10 @@ const ChatView = ({
                     (users || []).forEach(user => {
                         if (user.peerId !== peerId && user.peerId) {
                             console.log('📞 Calling existing user:', user.username, user.peerId);
-                            callPeer(user.peerId);
+                            // Add small delay between calls to avoid overwhelming PeerJS
+                            setTimeout(() => {
+                                callPeer(user.peerId);
+                            }, 100);
                         }
                     });
                 });
