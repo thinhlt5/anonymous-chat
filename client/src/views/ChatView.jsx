@@ -166,13 +166,14 @@ const ChatView = ({
         const handleUserJoinedVoice = ({ peerId: newPeerId, username }) => {
             console.log(`ℹ️ New user joined voice: ${username} (${newPeerId})`);
             
-            // Proactively call the new user (Dual-initiation strategy with dedupe)
-            if (newPeerId !== peerId && !activeCalls.has(newPeerId)) {
+            // Only call if WE are in voice chat too (have local stream)
+            if (inVoiceChat && localStreamRef.current && newPeerId !== peerId && !activeCalls.has(newPeerId)) {
                 console.log(`📞 Proactively calling new user: ${username}`);
-                // Add random delay to minimize collision probability
                 setTimeout(() => {
                     callPeer(newPeerId);
                 }, Math.random() * 500 + 100);
+            } else if (!inVoiceChat) {
+                console.log(`ℹ️ We're not in voice chat, skipping call to ${username}`);
             }
             
             // Refresh list
@@ -258,118 +259,32 @@ const ChatView = ({
         const audio = new Audio();
         audio.srcObject = stream;
         audio.autoplay = true;
-        audio.playsInline = true; // Important for iOS
-        audio.volume = 1.0; 
-        audio.muted = false; // Explicitly unmute but loopback protection might be needed if testing on same device without headphones
+        audio.playsInline = true;
+        audio.volume = 1.0;
+        audio.muted = false; // NOT muted - we want to hear it
         
-        // CRITICAL: Append to document body so browser can play it
+        // Append to DOM
         audio.style.display = 'none';
         document.body.appendChild(audio);
 
-        // setup shared AudioContext if needed
-        let audioCtx = audioContextRef.current;
-        if (!audioCtx) {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-                audioContextRef.current = audioCtx;
-            } catch (e) {
-                console.warn('Could not create AudioContext, visualization disabled', e);
-            }
-        }
-
-        // Setup audio analysis for remote user visualization
-        if (audioCtx) {
-            try {
-                // Determine source: if existing analyzer exists, reuse or recreate?
-                // Best to simple create a source and analyzer for this specific steam
-                
-                // Close/disconnect previous analyzer for this peer if exists
-                if (remoteAnalysersRef.current[peerId]) {
-                    try {
-                        const old = remoteAnalysersRef.current[peerId];
-                        // old.source.disconnect(); // source can't be strictly disconnected from track easily but GC handles it
-                        old.analyser.disconnect();
-                    } catch(e) {}
-                }
-
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
-                const analyser = audioCtx.createAnalyser();
-                const source = audioCtx.createMediaStreamSource(stream);
-                
-                source.connect(analyser);
-                // CRITICAL FIX: Connect to speakers (Destination) because creating a source might mute the original stream
-                analyser.connect(audioCtx.destination);
-                
-                analyser.fftSize = 256;
-                
-                remoteAnalysersRef.current[peerId] = { analyser, source }; // Store source to prevent GC
-                
-                // Mute the HTML audio element to prevent double audio (echo) since we use WebAudio for playback now
-                audio.muted = true;
-                
-                // Start volume monitoring for this remote user
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                const updateRemoteVolume = () => {
-                    // Check if peer still exists in our refs
-                    if (!remoteAnalysersRef.current[peerId]) return;
-                    
-                    try {
-                        analyser.getByteFrequencyData(dataArray);
-                        let sum = 0;
-                        for(let i = 0; i < dataArray.length; i++) {
-                            sum += dataArray[i];
-                        }
-                        const average = sum / dataArray.length;
-                        const vol = Math.min(1, average / 50);
-                        
-                        setRemoteVolumes(prev => ({
-                            ...prev,
-                            [peerId]: vol
-                        }));
-                        
-                        requestAnimationFrame(updateRemoteVolume);
-                    } catch(e) {
-                        // Context might be closed
-                    }
+        // Try to play
+        audio.play()
+            .then(() => {
+                console.log('✅ Audio playing for peer:', peerId);
+            })
+            .catch(err => {
+                console.warn('⚠️ Autoplay blocked, waiting for user interaction');
+                const unlock = () => {
+                    audio.play().catch(e => console.error('Unlock failed', e));
+                    document.removeEventListener('click', unlock);
+                    document.removeEventListener('touchstart', unlock);
                 };
-                updateRemoteVolume();
-                
-                console.log('🎵 Audio analyzer set up for peer:', peerId);
-            } catch (e) {
-                console.error('Failed to setup remote audio analysis', e);
-            }
-        }
-
-        // Try to play immediately
-        const playWithRetry = () => {
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        console.log('✅ Audio playing successfully for peer:', peerId);
-                    })
-                    .catch(err => {
-                        console.warn('⚠️ Audio autoplay blocked for peer:', peerId, err);
-                        // Store this unlock function globally or attach to a one-time click listener
-                        const unlockAudio = () => {
-                            audio.play().catch(e => console.error('Unlock failed', e));
-                            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-                            document.removeEventListener('click', unlockAudio);
-                            document.removeEventListener('touchstart', unlockAudio);
-                        };
-                        document.addEventListener('click', unlockAudio, { once: true });
-                        document.addEventListener('touchstart', unlockAudio, { once: true });
-                    });
-            }
-        };
-        playWithRetry();
+                document.addEventListener('click', unlock, { once: true });
+                document.addEventListener('touchstart', unlock, { once: true });
+            });
 
         remoteAudioRefs.current[peerId] = audio;
-        console.log('🎧 Remote audio element created for peer:', peerId);
+        console.log('🎧 Remote audio setup complete for peer:', peerId);
     };
 
     // Remove remote audio stream
@@ -498,46 +413,6 @@ const ChatView = ({
 
             console.log('Microphone access granted, tracks:', stream.getAudioTracks().length);
             setDebugInfo(`Mic OK: ${stream.getAudioTracks().length} track(s)`);
-
-            // Setup local visualization (Standard)
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioCtx = new AudioContext();
-                const analyser = audioCtx.createAnalyser();
-                const source = audioCtx.createMediaStreamSource(stream);
-                
-                source.connect(analyser);
-                analyser.fftSize = 256;
-                
-                audioContextRef.current = audioCtx;
-                analyserRef.current = analyser;
-
-                // Start volume monitoring loop
-                const dataArray = new Uint8Array(analyser.frequencyBinCount);
-                const updateVolume = () => {
-                    if (!analyserRef.current) return;
-                    analyserRef.current.getByteFrequencyData(dataArray);
-                    
-                    // simple average
-                    let sum = 0;
-                    for(let i = 0; i < dataArray.length; i++) {
-                        sum += dataArray[i];
-                    }
-                    const average = sum / dataArray.length;
-                    
-                    // Normalize to 0-1 range roughly
-                    const vol = Math.min(1, average / 50); 
-                    setMicVolume(vol);
-                    
-                    if (inVoiceChat || localStreamRef.current) {
-                        volumeIntervalRef.current = requestAnimationFrame(updateVolume);
-                    }
-                };
-                updateVolume();
-                
-            } catch (e) {
-                console.error("Audio visualization setup failed", e);
-            }
 
             return stream;
         } catch (err) {
