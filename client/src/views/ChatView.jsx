@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
-import { useVoiceChat } from './VoiceChat';
+import { VoiceChat } from './VoiceChat';
 import {
     Ghost,
     Send,
@@ -43,14 +43,7 @@ const ChatView = ({
     const [previewFile, setPreviewFile] = useState(null);
 
     // Voice Chat - using new simplified hook
-    const {
-        inVoiceChat,
-        isMuted,
-        voiceChatUsers,
-        joinVoiceChat,
-        leaveVoiceChat,
-        toggleMute
-    } = useVoiceChat(socket, myPeer, myPeerId, userData.room, userData.username);
+    const [enableVoice, setEnableVoice] = useState(false);
 
     // DOM refs
     const messagesEndRef = useRef(null);
@@ -357,47 +350,31 @@ const ChatView = ({
                             VOICE CHAT
                         </h3>
                         
-                        {inVoiceChat ? (
+                        {enableVoice ? (
                             <div className="space-y-2">
-                                {/* Voice Users List */}
-                                <div className="space-y-1 mb-3">
-                                    {voiceChatUsers.map((user) => (
-                                        <div key={user.peerId} className="flex items-center gap-2 text-sm text-gray-400">
-                                            <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse" />
-                                            {user.username}
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Voice Controls */}
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={toggleMute}
-                                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${isMuted ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-neon-green/20 text-neon-green border border-neon-green/30'}`}
-                                    >
-                                        {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                                        <span className="text-xs">{isMuted ? 'Unmute' : 'Mute'}</span>
-                                    </button>
-                                    <button
-                                        onClick={leaveVoiceChat}
-                                        className="flex items-center justify-center gap-2 px-3 py-2 bg-red-500/20 text-red-500 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors"
-                                    >
-                                        <PhoneOff className="w-4 h-4" />
-                                    </button>
-                                </div>
+                                {/* LiveKit Component handles everything */}
+                                <VoiceChat roomName={userData.room} username={userData.username} />
+                                
+                                <button
+                                    onClick={() => setEnableVoice(false)}
+                                    className="w-full flex items-center justify-center gap-2 px-3 py-2 mt-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+                                >
+                                    <PhoneOff className="w-3 h-3" />
+                                    <span className="text-xs">Disconnect Voice</span>
+                                </button>
                             </div>
                         ) : (
                             <>
                                 <button
-                                    onClick={joinVoiceChat}
+                                    onClick={() => setEnableVoice(true)}
                                     className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-neon-green/10 text-neon-green border border-neon-green/30 rounded-lg hover:bg-neon-green/20 transition-colors"
                                 >
                                     <Phone className="w-4 h-4" />
-                                    <span className="text-sm">Join Voice Chat</span>
+                                    <span className="text-sm">Join Voice Room</span>
                                 </button>
                                 <p className="text-[10px] text-gray-500 text-center mt-2 flex items-center justify-center gap-1">
                                     <Headphones className="w-3 h-3" />
-                                    Đeo tai nghe để tránh bị vọng tiếng
+                                    No Echo • Clear Audio
                                 </p>
                             </>
                         )}

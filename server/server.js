@@ -3,16 +3,51 @@ const http = require('http');
 const { Server } = require("socket.io");
 const cors = require('cors');
 
+const { AccessToken } = require('livekit-server-sdk');
+require('dotenv').config();
+
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: [
+        "https://anonymous-chat-nine.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+}));
 const server = http.createServer(app);
 
-const { ExpressPeerServer } = require('peer');
-const peerServer = ExpressPeerServer(server, {
-  debug: true,
-  path: '/'
+// ❌ Removed PeerJS Server
+
+// ✅ LiveKit Token Endpoint
+app.get('/api/get-token', async (req, res) => {
+    const roomName = req.query.room;
+    const participantName = req.query.username;
+
+    if (!roomName || !participantName) {
+        return res.status(400).json({ error: 'Missing room or username' });
+    }
+
+    try {
+        const at = new AccessToken(
+            process.env.LIVEKIT_API_KEY,
+            process.env.LIVEKIT_API_SECRET,
+            {
+                identity: participantName,
+                name: participantName,
+            }
+        );
+
+        at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true });
+
+        const token = await at.toJwt();
+        res.json({ token });
+    } catch (error) {
+        console.error('Error generating token:', error);
+        res.status(500).json({ error: 'Could not generate token' });
+    }
 });
-app.use('/peerjs', peerServer);
 
 const io = new Server(server, {
     cors: {
