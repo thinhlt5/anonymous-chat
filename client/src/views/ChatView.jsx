@@ -225,10 +225,25 @@ const ChatView = ({
         
         console.log('🔊 Setting up audio for peer:', peerId);
         
-        // Log stream details
+        // Log stream details and setup unmuted handler
         const audioTracks = stream.getAudioTracks();
         if (audioTracks.length > 0) {
-            console.log(`Checking track for ${peerId}:`, audioTracks[0].label, 'Enabled:', audioTracks[0].enabled, 'Muted:', audioTracks[0].muted);
+            const track = audioTracks[0];
+            console.log(`Checking track for ${peerId}:`, track.label, 'Enabled:', track.enabled, 'Muted:', track.muted);
+            
+            // Listen for when audio actually starts flowing
+            track.onunmute = () => {
+                console.log(`Track UNMUTED for peer ${peerId} - Audio data arriving!`);
+                if (remoteAudioRefs.current[peerId]) {
+                    remoteAudioRefs.current[peerId].play()
+                        .then(() => console.log(`▶️ Playback started for unmuted peer ${peerId}`))
+                        .catch(e => console.error('Play on unmute failed', e));
+                }
+            };
+            
+            track.onmute = () => {
+                console.warn(`Track MUTED for peer ${peerId} - Audio data stopped.`);
+            };
         } else {
             console.warn(`Warning: Stream from ${peerId} has NO audio tracks!`);
         }
@@ -449,7 +464,7 @@ const ChatView = ({
             console.log('Microphone access granted, tracks:', stream.getAudioTracks().length);
             setDebugInfo(`Mic OK: ${stream.getAudioTracks().length} track(s)`);
 
-            // Setup Audio Analysis for Visualization
+            // Setup local visualization (Standard)
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const audioCtx = new AudioContext();
