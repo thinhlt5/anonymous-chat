@@ -301,9 +301,15 @@ const ChatView = ({
                 const source = audioCtx.createMediaStreamSource(stream);
                 
                 source.connect(analyser);
+                // CRITICAL FIX: Connect to speakers (Destination) because creating a source might mute the original stream
+                analyser.connect(audioCtx.destination);
+                
                 analyser.fftSize = 256;
                 
                 remoteAnalysersRef.current[peerId] = { analyser, source }; // Store source to prevent GC
+                
+                // Mute the HTML audio element to prevent double audio (echo) since we use WebAudio for playback now
+                audio.muted = true;
                 
                 // Start volume monitoring for this remote user
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
