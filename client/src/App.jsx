@@ -17,11 +17,27 @@ import {
 // ═══════════════════════════════════════════════════════════════════
 // SOCKET CONNECTION
 // ═══════════════════════════════════════════════════════════════════
-const SOCKET_URL = window.location.hostname === 'localhost'
-  ? "http://localhost:3001"
-  : `http://${window.location.hostname}:3001`;
+// ═══════════════════════════════════════════════════════════════════
+// SOCKET CONNECTION
+// ═══════════════════════════════════════════════════════════════════
+const getSocketUrl = () => {
+  if (import.meta.env.VITE_SOCKET_URL) {
+    console.log('Using VITE_SOCKET_URL:', import.meta.env.VITE_SOCKET_URL);
+    return import.meta.env.VITE_SOCKET_URL;
+  }
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log('Using localhost fallback');
+    return "http://localhost:3001";
+  }
+  console.log('Using relative path fallback');
+  return "/";
+};
 
-const socket = io(SOCKET_URL);
+const socket = io(getSocketUrl(), {
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+});
 
 // ═══════════════════════════════════════════════════════════════════
 // MAIN APP COMPONENT
@@ -41,6 +57,9 @@ function App() {
   const [roomUsers, setRoomUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
+  
+  // Connection State
+  const [isConnected, setIsConnected] = useState(socket.connected);
 
   // UI State
   const [isLoading, setIsLoading] = useState(false);
@@ -64,6 +83,29 @@ function App() {
   // SOCKET EVENT LISTENERS
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Connection handlers
+    function onConnect() {
+      setIsConnected(true);
+      console.log('Socket connected:', socket.id);
+    }
+
+    function onDisconnect() {
+      setIsConnected(false);
+      console.log('Socket disconnected');
+    }
+
+    function onConnectError(err) {
+      console.error('Socket connection error:', err);
+      // Only show error if we've been trying for a while or it's a critical failure
+      if (!socket.active) {
+         setError('Connection failed. Please check your internet or server status.');
+      }
+    }
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('connect_error', onConnectError);
+
     socket.on('user_list', (users) => {
       setRoomUsers(users);
     });
@@ -117,6 +159,9 @@ function App() {
     });
 
     return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('connect_error', onConnectError);
       socket.off('user_list');
       socket.off('receive_message');
       socket.off('system_message');
@@ -385,6 +430,13 @@ function App() {
     <div className="min-h-screen bg-dark-bg font-mono">
       {/* Scanlines Effect (subtle) */}
       <div className="scanlines opacity-[0.02]" />
+
+      {/* Connection Status Banner */}
+      {!isConnected && (
+        <div className="fixed top-0 left-0 right-0 bg-red-600/90 text-white text-xs py-1 px-4 text-center z-[9999] backdrop-blur-sm border-b border-red-400 font-bold uppercase tracking-widest animate-pulse">
+          ⚠️ CONNECTION LOST - ATTEMPTING RECONNECT ⚠️
+        </div>
+      )}
 
       {/* Main Content */}
       {renderView()}
