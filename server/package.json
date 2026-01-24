@@ -13,9 +13,10 @@
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.2.1",
-    "nodemon": "^3.1.11",
-    "peer": "^1.0.2",
-    "socket.io": "^4.8.3"
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "livekit-server-sdk": "^2.8.0",
+    "nodemon": "^3.1.7",
+    "socket.io": "^4.8.1"
   }
 }
