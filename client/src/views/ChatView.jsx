@@ -92,9 +92,8 @@ const ChatView = ({
         }, 1000);
     };
 
-    // File upload
-    const handleFileSelect = async (e) => {
-        const file = e.target.files[0];
+    // File processing helper
+    const processFile = (file) => {
         if (!file) return;
 
         if (file.size > MAX_FILE_SIZE) {
@@ -106,26 +105,52 @@ const ChatView = ({
         reader.onload = (event) => {
             const dataUrl = event.target.result;
 
-            socket.emit('send_message', {
+            // Use 'send_file' event as expected by server
+            socket.emit('send_file', {
                 room: userData.room,
-                content: file.type.startsWith('image/') ? '' : file.name,
-                sender: userData.username,
-                file: {
-                    name: file.name,
-                    type: file.type,
-                    data: dataUrl
-                }
+                username: userData.username,
+                fileData: dataUrl,
+                fileName: file.name || 'pasted-image.png',
+                fileType: file.type,
+                fileSize: file.size
             });
         };
 
         reader.readAsDataURL(file);
+    };
+
+    // File upload
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        processFile(file);
         e.target.value = '';
     };
 
-    const handleFileDownload = (file) => {
+    // Paste handler
+    const handlePaste = (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                const file = item.getAsFile();
+                processFile(file);
+                e.preventDefault(); // Prevent pasting the image binary data as text
+                return;
+            }
+        }
+    };
+
+    const handleFileDownload = (msgOrFile) => {
+        // Handle both flat message structure (from server) and nested file object (legacy/local)
+        const data = msgOrFile.content || msgOrFile.data || (msgOrFile.file && msgOrFile.file.data);
+        const name = msgOrFile.fileName || msgOrFile.name || (msgOrFile.file && msgOrFile.file.name) || 'download';
+        
+        if (!data) return;
+
         const link = document.createElement('a');
-        link.href = file.data;
-        link.download = file.name;
+        link.href = data;
+        link.download = name;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -183,24 +208,24 @@ const ChatView = ({
                                             <p className="text-xs text-neon-purple font-semibold mb-1">{msg.sender}</p>
                                         )}
                                         
-                                        {msg.file && msg.file.type.startsWith('image/') ? (
+                                        {(msg.type === 'image' || (msg.file && msg.file.type?.startsWith('image/'))) ? (
                                             <img
-                                                src={msg.file.data}
-                                                alt={msg.file.name}
+                                                src={msg.content || msg.file.data}
+                                                alt={msg.fileName || msg.file.name}
                                                 className="rounded-lg max-w-full cursor-pointer hover:opacity-80 transition"
-                                                onClick={() => handleFileDownload(msg.file)}
+                                                onClick={() => handleFileDownload(msg)}
                                             />
-                                        ) : msg.file ? (
+                                        ) : (msg.type === 'file' || (msg.file && !msg.file.type?.startsWith('image/'))) ? (
                                             <button
-                                                onClick={() => handleFileDownload(msg.file)}
+                                                onClick={() => handleFileDownload(msg)}
                                                 className="flex items-center gap-2 text-sm text-neon-cyan hover:text-neon-cyan/80 transition"
                                             >
                                                 <Download className="w-4 h-4" />
-                                                {msg.file.name}
+                                                {msg.fileName || (msg.file && msg.file.name)}
                                             </button>
                                         ) : null}
 
-                                        {msg.content && (
+                                        {(msg.type === 'text' || (!msg.type && !msg.file)) && msg.content && (
                                             <p 
                                                 className="text-sm text-white break-words"
                                                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(msg.content) }}
@@ -243,7 +268,8 @@ const ChatView = ({
                                 type="text"
                                 value={messageInput}
                                 onChange={handleTyping}
-                                placeholder="Type a message..."
+                                onPaste={handlePaste}
+                                placeholder="Type a message (or paste an image)..."
                                 className="flex-1 px-4 py-3 bg-dark-surface border border-neon-cyan/30 text-white rounded-lg focus:outline-none focus:border-neon-cyan placeholder-gray-500"
                             />
                             <button
