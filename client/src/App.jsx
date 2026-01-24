@@ -181,16 +181,12 @@ function App() {
   // INITIALIZE PEERJS
   // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // 🔧 Use Self-Hosted PeerJS Server on Render + Free TURN Servers
-    const socketUrl = getSocketUrl();
-    const isProduction = !socketUrl.includes('localhost');
+    // 🔧 Use Public PeerJS Cloud + Free TURN Servers (Best of both worlds)
+    // This allows easy discovery (Public) but reliable connection (TURN)
     
     const peerConfig = {
       debug: 1,
-      host: isProduction ? 'anonymous-chat-w798.onrender.com' : 'localhost',
-      port: isProduction ? 443 : 3001,
-      path: '/peerjs',
-      secure: isProduction,
+      // No 'host/port/path' = defaults to public 0.peerjs.com
       config: {
         iceServers: [
           // 🚀 OpenRelay (Free TURN Server) - Critical for WAN/Mobile connections
@@ -224,7 +220,7 @@ function App() {
 
     // Standard Peer Connection
     peerInstance.on('open', (id) => {
-      console.log(`✅ ${isProduction ? 'Self-Hosted' : 'Local'} Peer Connected! ID: ` + id);
+      console.log('✅ Public Peer Connected (with TURN)! ID: ' + id);
       setPeerId(id);
     });
 
