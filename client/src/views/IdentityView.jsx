@@ -32,7 +32,7 @@ const IdentityView = ({ userData, setUserData, navigateTo, goBack, error, setErr
                 {/* Header */}
                 <div className="text-center mb-8">
                     <User className="w-16 h-16 mx-auto text-neon-pink mb-4" />
-                    <h2 className="text-2xl font-bold text-neon-pink text-glow-pink">
+                    <h2 className="text-2xl font-bold text-neon-pink">
                         CHOOSE YOUR NICKNAME
                     </h2>
                     <p className="text-gray-400 text-sm mt-2">
