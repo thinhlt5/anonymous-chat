@@ -68,6 +68,10 @@ const ChatView = ({
     const analyserRef = useRef(null);
     const volumeIntervalRef = useRef(null);
     const [micVolume, setMicVolume] = useState(0);
+    
+    // Track remote user volumes for visualization
+    const remoteAnalysersRef = useRef({});
+    const [remoteVolumes, setRemoteVolumes] = useState({});
 
     // Refs to access current values in callbacks (avoid stale closures)
     const localStreamRef = useRef(null);
@@ -198,6 +202,47 @@ const ChatView = ({
             audio.playsInline = true; // Important for iOS
             audio.volume = 1.0; // Ensure volume is at max
 
+            // Setup audio analysis for remote user visualization
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+                const analyser = audioCtx.createAnalyser();
+                const source = audioCtx.createMediaStreamSource(stream);
+                
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                
+                remoteAnalysersRef.current[peerId] = { analyser, audioCtx };
+                
+                // Start volume monitoring for this remote user
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                const updateRemoteVolume = () => {
+                    if (!remoteAnalysersRef.current[peerId]) return;
+                    
+                    analyser.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for(let i = 0; i < dataArray.length; i++) {
+                        sum += dataArray[i];
+                    }
+                    const average = sum / dataArray.length;
+                    const vol = Math.min(1, average / 50);
+                    
+                    setRemoteVolumes(prev => ({
+                        ...prev,
+                        [peerId]: vol
+                    }));
+                    
+                    if (remoteAudioRefs.current[peerId]) {
+                        requestAnimationFrame(updateRemoteVolume);
+                    }
+                };
+                updateRemoteVolume();
+                
+                console.log('🎵 Audio analyzer set up for peer:', peerId);
+            } catch (e) {
+                console.error('Failed to setup remote audio analysis', e);
+            }
+
             // Try to play immediately
             const playPromise = audio.play();
             if (playPromise !== undefined) {
@@ -236,6 +281,19 @@ const ChatView = ({
             remoteAudioRefs.current[peerId].srcObject = null;
             delete remoteAudioRefs.current[peerId];
         }
+        
+        // Cleanup analyzer
+        if (remoteAnalysersRef.current[peerId]) {
+            remoteAnalysersRef.current[peerId].audioCtx.close();
+            delete remoteAnalysersRef.current[peerId];
+        }
+        
+        // Remove volume state
+        setRemoteVolumes(prev => {
+            const newVols = { ...prev };
+            delete newVols[peerId];
+            return newVols;
+        });
     };
 
     // Call a peer
@@ -730,18 +788,55 @@ const ChatView = ({
                         <div className="space-y-2">
                             {/* Voice Chat Users */}
                             <div className="space-y-1 mb-3 max-h-24 overflow-y-auto">
-                                {voiceChatUsers.map((user) => (
-                                    <div
-                                        key={user.peerId}
-                                        className="flex items-center gap-2 text-sm text-gray-300 px-2 py-1 rounded bg-neon-green/10"
-                                    >
-                                        <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                                        <span className="truncate">{user.username}</span>
-                                        {user.peerId === peerId && (
-                                            <span className="text-xs text-gray-500">(you)</span>
-                                        )}
-                                    </div>
-                                ))}
+                                {voiceChatUsers.map((user) => {
+                                    const isMe = user.peerId === peerId;
+                                    const userVolume = isMe ? micVolume : (remoteVolumes[user.peerId] || 0);
+                                    const isSpeaking = userVolume > 0.1;
+                                    
+                                    return (
+                                        <div
+                                            key={user.peerId}
+                                            className="relative flex items-center gap-2 text-sm text-gray-300 px-2 py-1 rounded bg-neon-green/10 transition-all duration-100"
+                                            style={{
+                                                backgroundColor: isSpeaking ? `rgba(0, 255, 65, ${0.1 + userVolume * 0.2})` : undefined
+                                            }}
+                                        >
+                                            {/* Speaking Indicator with Volume Visualization */}
+                                            <div className="relative">
+                                                <div 
+                                                    className="w-2 h-2 rounded-full bg-neon-green"
+                                                    style={{
+                                                        boxShadow: isSpeaking ? `0 0 ${8 + userVolume * 12}px rgba(0, 255, 65, ${0.6 + userVolume * 0.4})` : undefined
+                                                    }}
+                                                />
+                                                {/* Animated pulse ring when speaking */}
+                                                {isSpeaking && (
+                                                    <div 
+                                                        className="absolute inset-0 rounded-full border-2 border-neon-green animate-ping"
+                                                        style={{
+                                                            opacity: userVolume * 0.6,
+                                                            animationDuration: '1s'
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
+                                            
+                                            <span 
+                                                className="truncate transition-all duration-100"
+                                                style={{
+                                                    fontWeight: isSpeaking ? '600' : '400',
+                                                    color: isSpeaking ? '#00ff41' : undefined
+                                                }}
+                                            >
+                                                {user.username}
+                                            </span>
+                                            
+                                            {isMe && (
+                                                <span className="text-xs text-gray-500">(you)</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             {/* Voice Controls */}
