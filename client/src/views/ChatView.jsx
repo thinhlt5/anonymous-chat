@@ -34,7 +34,9 @@ const ChatView = ({
     setShowSettings,
     handleLeaveRoom,
     formatTime,
-    settings
+    settings,
+    myPeer,
+    myPeerId
 }) => {
     const [messageInput, setMessageInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -45,8 +47,11 @@ const ChatView = ({
     const [isMuted, setIsMuted] = useState(false);
     const [voiceChatUsers, setVoiceChatUsers] = useState([]);
     const [localStream, setLocalStream] = useState(null);
-    const [peer, setPeer] = useState(null);
-    const [peerId, setPeerId] = useState('');
+    
+    // Use props instead of local state for peer
+    const peer = myPeer;
+    const peerId = myPeerId;
+    
     const [activeCalls, setActiveCalls] = useState(new Map());
     const [isConnectingVoice, setIsConnectingVoice] = useState(false);
     const [voiceError, setVoiceError] = useState('');
@@ -66,35 +71,22 @@ const ChatView = ({
     const peerIdRef = useRef('');
 
     // Initialize PeerJS
+    // Initialize PeerJS Listeners for ChatView
     useEffect(() => {
-        setPeerStatus('connecting');
+        if (!peer) {
+            setPeerStatus('connecting');
+            return;
+        }
 
-        const peerConfig = {
-            debug: 2,
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                ]
-            }
-        };
+        setPeerStatus('connected');
+        setDebugInfo(`PeerJS OK: ${peerId.substring(0, 8)}...`);
+        peerRef.current = peer;
+        peerIdRef.current = peerId;
 
-        const peerInstance = new Peer(peerConfig);
-
-        peerInstance.on('open', (id) => {
-            setPeerId(id);
-            peerIdRef.current = id;
-            setPeerStatus('connected');
-            console.log('PeerJS connected with ID:', id);
-            setDebugInfo(`PeerJS OK: ${id.substring(0, 8)}...`);
-        });
-
-        peerInstance.on('call', (call) => {
+        const handleCall = (call) => {
             console.log('Incoming call from:', call.peer);
-            console.log('Current localStreamRef:', localStreamRef.current);
-
-            // Answer incoming call if we have a stream
+            
+            // Answer incoming call if we have a stream (are in voice chat)
             if (localStreamRef.current) {
                 console.log('Answering call with stream');
                 call.answer(localStreamRef.current);
@@ -116,37 +108,31 @@ const ChatView = ({
                 setActiveCalls(prev => new Map(prev).set(call.peer, call));
             } else {
                 console.log('No local stream to answer with - user not in voice chat');
+                // Optional: reject call? call.close();
             }
-        });
+        };
 
-        peerInstance.on('error', (err) => {
+        const handleError = (err) => {
             console.error('PeerJS Error:', err);
             setPeerStatus('error');
             setDebugInfo(`PeerJS Error: ${err.type}`);
 
             if (err.type === 'network' || err.type === 'server-error') {
                 setVoiceError('Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.');
-            } else if (err.type === 'unavailable-id') {
-                // Retry with new peer
-                setTimeout(() => {
-                    peerInstance.reconnect();
-                }, 1000);
             }
-        });
+        };
 
-        peerInstance.on('disconnected', () => {
-            console.log('PeerJS disconnected, trying to reconnect...');
-            setPeerStatus('connecting');
-            peerInstance.reconnect();
-        });
-
-        setPeer(peerInstance);
-        peerRef.current = peerInstance;
+        // Attach listeners
+        peer.on('call', handleCall);
+        peer.on('error', handleError);
 
         return () => {
-            peerInstance.destroy();
+            // Detach listeners on unmount
+            peer.off('call', handleCall);
+            peer.off('error', handleError);
+            // DO NOT destroy the peer instance as it belongs to App.jsx
         };
-    }, []);
+    }, [peer, peerId]);
 
     // Socket events for voice chat
     useEffect(() => {

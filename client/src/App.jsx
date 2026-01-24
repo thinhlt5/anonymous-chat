@@ -177,10 +177,26 @@ function App() {
   // ─────────────────────────────────────────────────────────────────
   // INITIALIZE PEERJS
   // ─────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────
+  // INITIALIZE PEERJS
+  // ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const peerInstance = new Peer();
+    // Production-ready PeerJS config
+    const peerConfig = {
+      debug: 1, // Errors only
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+        ]
+      }
+    };
+
+    const peerInstance = new Peer(undefined, peerConfig);
 
     peerInstance.on('open', (id) => {
+      console.log('My Peer ID is: ' + id);
       setPeerId(id);
     });
 
@@ -408,6 +424,9 @@ function App() {
               handleLeaveRoom={handleLeaveRoom}
               formatTime={formatTime}
               settings={settings}
+              // Pass PeerJS instance from App
+              myPeer={peer} 
+              myPeerId={peerId}
             />
             {showSettings && (
               <SettingsModal
@@ -434,7 +453,7 @@ function App() {
       {/* Connection Status Banner */}
       {!isConnected && (
         <div className="fixed top-0 left-0 right-0 bg-red-600/90 text-white text-xs py-1 px-4 text-center z-[9999] backdrop-blur-sm border-b border-red-400 font-bold uppercase tracking-widest animate-pulse">
-          ⚠️ CONNECTION LOST - ATTEMPTING RECONNECT ⚠️
+          CONNECTING...
         </div>
       )}
 
