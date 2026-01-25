@@ -19,6 +19,17 @@ app.use(cors({
 }));
 const server = http.createServer(app);
 
+const LIVEKIT_ROOM_REGEX = /^[a-zA-Z0-9-_.]{1,64}$/;
+
+const sanitizeForLiveKit = (roomName) => {
+    // Replace invalid characters with underscore
+    let sanitized = roomName.replace(/[^a-zA-Z0-9-_.]/g, '_');
+    // Ensure it's not empty and within length limits
+    if (sanitized.length === 0) sanitized = "default_room";
+    if (sanitized.length > 64) sanitized = sanitized.substring(0, 64);
+    return sanitized;
+};
+
 app.get('/api/get-token', async (req, res) => {
     const roomName = req.query.room;
     const participantName = req.query.username;
@@ -37,7 +48,10 @@ app.get('/api/get-token', async (req, res) => {
             }
         );
 
-        at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true });
+        // Sanitize room name for LiveKit
+        const liveKitRoom = sanitizeForLiveKit(roomName);
+
+        at.addGrant({ roomJoin: true, room: liveKitRoom, canPublish: true, canSubscribe: true });
 
         const token = await at.toJwt();
         res.json({ token });
@@ -58,7 +72,7 @@ const io = new Server(server, {
         methods: ["GET", "POST"],
         credentials: true
     },
-    maxHttpBufferSize: 50 * 1024 * 1024 // Max file/image size: 50MB to handle base64 overhead
+    maxHttpBufferSize: 50 * 1024 * 1024 // Max file/image size: 50MB
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -228,9 +242,10 @@ io.on("connection", (socket) => {
     // ─────────────────────────────────────────────────────────────────
     // SEND FILE - Handle file/image sharing
     // ─────────────────────────────────────────────────────────────────
-    socket.on("send_file", ({ fileData, fileName, fileType, fileSize, username, room }) => {
+    socket.on("send_file", ({ fileData, fileName, fileType, fileSize, username, room }, callback) => {
         // Server-side validation (10MB limit)
         if (fileSize > 10 * 1024 * 1024) {
+            if (typeof callback === 'function') callback({ success: false, message: "File exceeds 10MB limit." });
             return socket.emit("file_error", { message: "File exceeds 10MB limit." });
         }
 
@@ -248,6 +263,10 @@ io.on("connection", (socket) => {
 
         socket.to(room).emit("receive_message", messageData);
         logSystem(`[${room}] ${username} shared file: ${fileName} (${(fileSize / 1024).toFixed(2)}KB)`);
+
+        if (typeof callback === 'function') {
+            callback({ success: true });
+        }
     });
 
     // ─────────────────────────────────────────────────────────────────

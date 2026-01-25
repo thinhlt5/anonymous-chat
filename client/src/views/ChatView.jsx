@@ -83,6 +83,12 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
                     fileName: previewFile.name,
                     fileType: previewFile.type,
                     fileSize: previewFile.size
+                }, (response) => {
+                     if (response && !response.success) {
+                         setError(response.message || 'Failed to send file.');
+                         // Remove optimistic update on failure
+                         setMessages(prev => prev.filter(msg => msg.id !== fileMsg.id));
+                     }
                 });
             }
     

@@ -111,6 +111,10 @@ export const VoiceChat = ({ roomName, username, onDisconnect }) => {
         </div>
     );
 
+    const handleLiveKitError = (error) => {
+        console.error("LiveKit connection error:", error);
+    };
+
     return (
         <div className="flex flex-col items-center gap-2 p-3 bg-dark-surface/80 backdrop-blur-sm rounded-xl border border-neon-cyan/20 shadow-lg">
             <LiveKitRoom
@@ -121,6 +125,8 @@ export const VoiceChat = ({ roomName, username, onDisconnect }) => {
                 connect={true}
                 data-lk-theme="default"
                 style={{ width: '100%' }}
+                onDisconnected={handleLiveKitError}
+                onError={handleLiveKitError}
             >
                 <RoomAudioRenderer />
                 
