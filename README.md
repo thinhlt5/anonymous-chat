@@ -192,18 +192,18 @@ VITE_LIVEKIT_URL=wss://your-livekit-url.livekit.cloud
 ### **Creating a Room**
 
 1. Enter your anonymous username
-2. Choose "Create New Operation"
-3. Enter a room name (operation codename)
+2. Choose "START A NEW ROOM"
+3. Enter a room name
 4. Optionally set a password for privacy
-5. Click "Initialize Operation"
+5. Click "CREATE ROOM"
 
 ### **Joining a Room**
 
 1. Enter your anonymous username
-2. Choose "Join Existing Operation"
+2. Choose "JOIN A ROOM"
 3. Enter the room name
 4. If password-protected, enter the password
-5. Click "Infiltrate Operation"
+5. Click "CONNECT TO ROOM"
 
 ### **Chat Features**
 
