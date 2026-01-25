@@ -14,7 +14,7 @@ const HomeView = ({ navigateTo }) => {
             <div className="glass-panel p-8 md:p-12 max-w-lg w-full text-center animate-fadeInUp relative">
 
                 {/* Title */}
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neon-cyan text-glow-cyan mb-2 animate-flicker">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neon-cyan">
                     ANONYMOUS CHAT
                 </h1>
 
