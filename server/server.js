@@ -215,7 +215,7 @@ io.on("connection", (socket) => {
             timestamp: Date.now()
         };
 
-        io.to(safeRoom).emit("receive_message", messageData);
+        socket.to(safeRoom).emit("receive_message", messageData);
         
         // Prevent crash on logging
         try {
@@ -246,7 +246,7 @@ io.on("connection", (socket) => {
             timestamp: Date.now()
         };
 
-        io.to(room).emit("receive_message", messageData);
+        socket.to(room).emit("receive_message", messageData);
         logSystem(`[${room}] ${username} shared file: ${fileName} (${(fileSize / 1024).toFixed(2)}KB)`);
     });
 

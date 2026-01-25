@@ -410,6 +410,7 @@ function App() {
               userData={userData}
               roomUsers={roomUsers}
               messages={messages}
+              setMessages={setMessages}
               typingUsers={typingUsers}
               error={error}
               setError={setError}

@@ -20,68 +20,98 @@ import {
     Headphones 
 } from 'lucide-react';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-const ChatView = ({
-    socket,
-    userData,
-    roomUsers,
-    messages,
-    typingUsers,
-    error,
-    setError,
-    setShowSettings,
-    handleLeaveRoom,
-    formatTime,
-    settings
-}) => {
-    const [messageInput, setMessageInput] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [previewFile, setPreviewFile] = useState(null);
+    const ChatView = ({
+        socket,
+        userData,
+        roomUsers,
+        messages,
+        setMessages, // Need to receive setMessages to update state
+        typingUsers,
+        error,
+        setError,
+        setShowSettings,
+        handleLeaveRoom,
+        formatTime,
+        settings
+    }) => {
+        const [messageInput, setMessageInput] = useState('');
+        const [isTyping, setIsTyping] = useState(false);
+        const [sidebarOpen, setSidebarOpen] = useState(false);
+        const [previewFile, setPreviewFile] = useState(null);
+    
+        // Voice Chat - using new simplified hook
+        const [enableVoice, setEnableVoice] = useState(false);
+    
+        // DOM refs
+        const messagesEndRef = useRef(null);
+        const fileInputRef = useRef(null);
+        const typingTimeoutRef = useRef(null);
+    
+        // Auto-scroll to bottom when new messages arrive
+        useEffect(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, [messages]);
+    
+        // Message handling
+        const handleSendMessage = (e) => {
+            e.preventDefault();
+            
+            // Send file if exists
+            if (previewFile) {
+                // Optimistic Update for File
+                const fileMsg = {
+                    id: `${socket.id}-${Date.now()}-file`,
+                    sender: userData.username,
+                    senderId: socket.id,
+                    content: previewFile.data,
+                    fileName: previewFile.name,
+                    fileType: previewFile.type,
+                    fileSize: previewFile.size,
+                    type: previewFile.type.startsWith('image/') ? 'image' : 'file',
+                    timestamp: Date.now()
+                };
+                
+                // Update local state immediately
+                setMessages(prev => [...prev, fileMsg]);
+                
+                socket.emit('send_file', {
+                    room: userData.room,
+                    username: userData.username,
+                    fileData: previewFile.data,
+                    fileName: previewFile.name,
+                    fileType: previewFile.type,
+                    fileSize: previewFile.size
+                });
+            }
+    
+            // Send text if exists
+            if (messageInput.trim()) {
+                const textMsg = {
+                     id: `${socket.id}-${Date.now()}-text`,
+                     sender: userData.username,
+                     senderId: socket.id,
+                     content: messageInput,
+                     type: 'text',
+                     timestamp: Date.now()
+                };
 
-    // Voice Chat - using new simplified hook
-    const [enableVoice, setEnableVoice] = useState(false);
+                // Update local state immediately
+                setMessages(prev => [...prev, textMsg]);
 
-    // DOM refs
-    const messagesEndRef = useRef(null);
-    const fileInputRef = useRef(null);
-    const typingTimeoutRef = useRef(null);
-
-    // Auto-scroll to bottom when new messages arrive
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-    // Message handling
-    const handleSendMessage = (e) => {
-        e.preventDefault();
-        
-        // Send file if exists
-        if (previewFile) {
-            socket.emit('send_file', {
-                room: userData.room,
-                username: userData.username,
-                fileData: previewFile.data,
-                fileName: previewFile.name,
-                fileType: previewFile.type,
-                fileSize: previewFile.size
-            });
+                socket.emit('send_message', {
+                    room: userData.room,
+                    content: messageInput,
+                    sender: userData.username
+                });
+                
+                setMessageInput('');
+                setIsTyping(false);
+                socket.emit('typing', { room: userData.room, username: userData.username, isTyping: false });
+            }
             setPreviewFile(null);
-        }
-
-        // Send text if exists
-        if (messageInput.trim()) {
-            socket.emit('send_message', {
-                room: userData.room,
-                content: messageInput,
-                sender: userData.username
-            });
-            setMessageInput('');
-            setIsTyping(false);
-            socket.emit('typing', { room: userData.room, username: userData.username, isTyping: false });
-        }
-    };
+        };
 
     const handleTyping = (e) => {
         setMessageInput(e.target.value);
