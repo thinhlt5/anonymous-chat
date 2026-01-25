@@ -218,7 +218,7 @@ io.on("connection", (socket) => {
         // Safe guard against crash
         const safeMessage = rawMessage || ""; 
         const safeUsername = rawUsername || "Anonymous";
-        const safeRoom = room || "Unknown";
+        const safeRoom = room ? room.trim() : "Unknown";
 
         const messageData = {
             id: `${socket.id}-${Date.now()}`,
@@ -261,8 +261,9 @@ io.on("connection", (socket) => {
             timestamp: Date.now()
         };
 
-        socket.to(room).emit("receive_message", messageData);
-        logSystem(`[${room}] ${username} shared file: ${fileName} (${(fileSize / 1024).toFixed(2)}KB)`);
+        const safeRoom = room ? room.trim() : "Unknown";
+        socket.to(safeRoom).emit("receive_message", messageData);
+        logSystem(`[${safeRoom}] ${username} shared file: ${fileName} (${(fileSize / 1024).toFixed(2)}KB)`);
 
         if (typeof callback === 'function') {
             callback({ success: true });

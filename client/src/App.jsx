@@ -307,14 +307,18 @@ function App() {
     setIsLoading(true);
     setError('');
 
+    const trimmedRoom = userData.room.trim();
+
     socket.emit('join_room', {
-      room: userData.room.trim(),
+      room: trimmedRoom,
       password: userData.password || null,
       username: userData.username,
       // peerId removed
     }, (response) => {
       setIsLoading(false);
       if (response.success) {
+        // Update userData with the trimmed room so ChatView uses the correct one
+        setUserData(prev => ({ ...prev, room: trimmedRoom }));
         setRoomUsers(response.users);
         setMessages([]);
         navigateTo('CHAT');
