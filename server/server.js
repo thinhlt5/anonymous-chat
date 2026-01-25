@@ -58,7 +58,7 @@ const io = new Server(server, {
         methods: ["GET", "POST"],
         credentials: true
     },
-    maxHttpBufferSize: 10 * 1024 * 1024 // Max file/image size: 10MB
+    maxHttpBufferSize: 50 * 1024 * 1024 // Max file/image size: 50MB to handle base64 overhead
 });
 
 // ═══════════════════════════════════════════════════════════════════

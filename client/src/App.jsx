@@ -177,6 +177,34 @@ function App() {
   // PeerJS effect removed
 
   // ─────────────────────────────────────────────────────────────────
+  // RECONNECTION LOGIC
+  // ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const handleRejoin = () => {
+      if (currentView === 'CHAT' && userData.room && userData.username) {
+        console.log('Connection restored. Attempting to rejoin room...');
+        socket.emit('join_room', {
+          room: userData.room,
+          password: userData.password || null,
+          username: userData.username
+        }, (response) => {
+          if (response.success) {
+            console.log('Rejoined room successfully');
+            setRoomUsers(response.users);
+          } else {
+            console.error('Failed to rejoin room:', response.message);
+          }
+        });
+      }
+    };
+
+    socket.on('connect', handleRejoin);
+    return () => {
+      socket.off('connect', handleRejoin);
+    };
+  }, [currentView, userData]);
+
+  // ─────────────────────────────────────────────────────────────────
   // NAVIGATION
   // ─────────────────────────────────────────────────────────────────
   const navigateTo = (view) => {
