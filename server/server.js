@@ -19,9 +19,6 @@ app.use(cors({
 }));
 const server = http.createServer(app);
 
-// ❌ Removed PeerJS Server
-
-// ✅ LiveKit Token Endpoint
 app.get('/api/get-token', async (req, res) => {
     const roomName = req.query.room;
     const participantName = req.query.username;
@@ -83,7 +80,7 @@ let voiceChatRooms = {};
 
 const logSystem = (message) => {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] 🔮 ${message}`);
+    console.log(`[${timestamp}] ${message}`);
 };
 
 const getRoomUsers = (roomName) => {
@@ -103,7 +100,7 @@ const selfDestructRoom = (roomName) => {
 
     if (rooms[roomName].users.size === 0) {
         delete rooms[roomName];
-        logSystem(`💀 SELF-DESTRUCT: Room "${roomName}" erased from memory. Zero footprint achieved.`);
+        logSystem(`SELF-DESTRUCT: Room "${roomName}" erased from memory. Zero footprint achieved.`);
     }
 };
 
@@ -112,7 +109,7 @@ const selfDestructRoom = (roomName) => {
 // ═══════════════════════════════════════════════════════════════════
 
 io.on("connection", (socket) => {
-    logSystem(`🔌 New connection: ${socket.id}`);
+    logSystem(`New connection: ${socket.id}`);
 
     // ─────────────────────────────────────────────────────────────────
     // CHECK ROOM - Verify if room exists and if password is required
@@ -142,7 +139,7 @@ io.on("connection", (socket) => {
             users: new Map()
         };
 
-        logSystem(`📁 Room created: "${room}" by ${username} ${password ? "(PASSWORD PROTECTED)" : "(OPEN)"}`);
+        logSystem(`Room created: "${room}" by ${username} ${password ? "(PASSWORD PROTECTED)" : "(OPEN)"}`);
 
         callback({ success: true });
     });
@@ -180,7 +177,7 @@ io.on("connection", (socket) => {
 
         socket.join(room);
 
-        logSystem(`👤 ${username} joined room "${room}"`);
+        logSystem(`${username} joined room "${room}"`);
 
         // Notify others in the room
         socket.to(room).emit("system_message", {
@@ -222,7 +219,7 @@ io.on("connection", (socket) => {
         
         // Prevent crash on logging
         try {
-            logSystem(`💬 [${safeRoom}] ${safeUsername}: ${safeMessage.substring(0, 50)}...`);
+            logSystem(`[${safeRoom}] ${safeUsername}: ${safeMessage.substring(0, 50)}...`);
         } catch (err) {
             console.error("Logging error:", err);
         }
@@ -250,7 +247,7 @@ io.on("connection", (socket) => {
         };
 
         io.to(room).emit("receive_message", messageData);
-        logSystem(`📎 [${room}] ${username} shared file: ${fileName} (${(fileSize / 1024).toFixed(2)}KB)`);
+        logSystem(`[${room}] ${username} shared file: ${fileName} (${(fileSize / 1024).toFixed(2)}KB)`);
     });
 
     // ─────────────────────────────────────────────────────────────────
@@ -280,7 +277,7 @@ io.on("connection", (socket) => {
 
         voiceChatRooms[room].set(peerId, voiceUserData);
 
-        logSystem(`🎤 ${username} joined voice chat in room "${room}"`);
+        logSystem(`${username} joined voice chat in room "${room}"`);
 
         // Notify others in the room about the new voice user
         socket.to(room).emit("user_joined_voice", { peerId, username });
@@ -294,7 +291,7 @@ io.on("connection", (socket) => {
         if (voiceChatRooms[room]) {
             voiceChatRooms[room].delete(peerId);
 
-            logSystem(`🔇 ${username} left voice chat in room "${room}"`);
+            logSystem(`${username} left voice chat in room "${room}"`);
 
             // Notify others
             socket.to(room).emit("user_left_voice", { peerId, username });
@@ -341,7 +338,7 @@ io.on("connection", (socket) => {
     // ─────────────────────────────────────────────────────────────────
     socket.on("disconnect", () => {
         const roomName = socketRoomMap[socket.id];
-        logSystem(`🔌 Disconnect initiated for socket: ${socket.id}, room: ${roomName || 'UNKNOWN'}`);
+        logSystem(`Disconnect initiated for socket: ${socket.id}, room: ${roomName || 'UNKNOWN'}`);
 
         // 1. AGGRESSIVE VOICE CHAT CLEANUP - Scan ALL rooms
         // This ensures we catch ghost users even if socketRoomMap is corrupted
@@ -352,7 +349,7 @@ io.on("connection", (socket) => {
                     voiceMap.delete(pId);
                     cleanedVoiceRooms++;
 
-                    logSystem(`🎤❌ Removed ${info.username} from voice chat in "${vRoomName}"`);
+                    logSystem(`Removed ${info.username} from voice chat in "${vRoomName}"`);
 
                     // Notify others in voice chat
                     socket.to(vRoomName).emit("user_left_voice", { 
@@ -367,14 +364,14 @@ io.on("connection", (socket) => {
                     // Clean up empty voice chat room
                     if (voiceMap.size === 0) {
                         delete voiceChatRooms[vRoomName];
-                        logSystem(`🗑️ Empty voice room "${vRoomName}" deleted`);
+                        logSystem(`Empty voice room "${vRoomName}" deleted`);
                     }
                 }
             }
         }
 
         if (cleanedVoiceRooms > 0) {
-            logSystem(`✅ Cleaned ${cleanedVoiceRooms} voice chat connection(s)`);
+            logSystem(`Cleaned ${cleanedVoiceRooms} voice chat connection(s)`);
         }
 
         // 2. Cleanup Main Room
@@ -404,7 +401,7 @@ io.on("connection", (socket) => {
         // Clean up socket mapping
         delete socketRoomMap[socket.id];
 
-        logSystem(`🔌 Connection closed: ${socket.id}`);
+        logSystem(`Connection closed: ${socket.id}`);
     });
 
     // ─────────────────────────────────────────────────────────────────
@@ -455,9 +452,9 @@ server.listen(PORT, () => {
 ║             ██║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝          ║
 ║             ╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝           ║
 ║                                                                   ║
-║           🔮 CORE SYSTEM ONLINE - PORT ${PORT}                     ║
-║           ⚡ Anonymous Encryption Layer v1.0                      ║
-║           💀 Self-Destruct Protocol: ACTIVE                       ║
+║           CORE SYSTEM ONLINE - PORT ${PORT}                     ║
+║           Anonymous Encryption Layer v1.0                      ║
+║           Self-Destruct Protocol: ACTIVE                       ║
 ║                                                                   ║
 ╚═══════════════════════════════════════════════════════════════════╝
     `);
