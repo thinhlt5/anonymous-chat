@@ -12,8 +12,6 @@ const HomeView = ({ navigateTo }) => {
         <div className="min-h-screen flex items-center justify-center p-4 cyber-grid relative overflow-hidden">
 
             <div className="glass-panel p-8 md:p-12 max-w-lg w-full text-center animate-fadeInUp relative">
-                {/* Glow Effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-neon-cyan/5 via-transparent to-neon-pink/5 rounded-lg" />
 
                 {/* Title */}
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-neon-cyan text-glow-cyan mb-2 animate-flicker">
