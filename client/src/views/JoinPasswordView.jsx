@@ -93,7 +93,7 @@ const JoinPasswordView = ({
                     <button
                         onClick={joinRoom}
                         disabled={isLoading || !userData.password}
-                        className="btn-neon-solid w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="btn-neon-yellow-solid w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? (
                             <>
