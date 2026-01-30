@@ -1,4 +1,33 @@
-# Phân Tích & Tài Liệu Về Socket.io
+# Phân Tích & Tài Liệu Về Socket.io & Backend
+
+## 0. Lý Thuyết Căn Bản & Định Nghĩa ("Socket.io là cái quái gì?")
+
+### a. Socket.io là gì?
+
+- **Định nghĩa**: Socket.io là một **Thư viện JavaScript** (Library) cho phép giao tiếp **hai chiều** (bidirectional), **thời gian thực** (real-time) và dựa trên sự kiện (event-based) giữa trình duyệt (Client) và máy chủ (Server).
+- **Nó KHÔNG phải là**: Nó không phải là một ngôn ngữ lập trình, cũng không phải là WebSocket thuần túy. Nó là một "lớp vỏ bọc" (wrapper) cao cấp giúp việc dùng WebSocket dễ dàng hơn và ổn định hơn.
+
+### b. Tại sao lại cần nó? (Vấn đề của Web truyền thống)
+
+- Web bình thường hoạt động kiểu "Hỏi - Đáp" (HTTP Request - Response).
+  - _Ví dụ_: Bạn muốn xem tin nhắn mới? Bạn phải nhấn F5 (Refresh) để "hỏi" server. Server không thể tự nhiên "nói" với bạn khi bạn chưa hỏi.
+- **Giải pháp của Socket.io**: Nó tạo ra một "đường ống nước" nối thẳng từ Server xuống máy bạn. Khi có nước (tin nhắn), Server cứ thế đổ vào ống, bạn nhận được ngay lập tức mà không cần hỏi.
+
+### c. Các Thành Phần Cốt Lõi
+
+1.  **Socket ID**:
+    - Mỗi khi một người dùng truy cập web, họ được cấp một cái "Chứng minh thư" tạm thời, gọi là `socket.id` (ví dụ: `x8s7_22ka...`).
+    - ID này dùng để Server phân biệt: "À, đây là ông A, kia là ông B".
+    - Nếu bạn F5 (tải lại trang), bạn sẽ bị coi là người mới và có ID mới.
+2.  **Sự Kiện (Events)**:
+    - Socket.io nói chuyện bằng "Sự kiện".
+    - `.emit('tên_sự_kiện', dữ_liệu)`: Dùng để **NÓI** (Gửi đi).
+    - `.on('tên_sự_kiện', hàm_xử_lý)`: Dùng để **NGHE** (Nhận về).
+    - _Ví dụ_: Bạn hét lên event `chat` (emit), server nghe thấy event `chat` (on) và xử lý.
+3.  **Namespace & Rooms**:
+    - **Room (Phòng)**: Là các "nhóm chat" ảo. Server có thể gom 10 cái Socket ID vào một phòng tên là "Lớp 12A". Khi server gửi tin vào "Lớp 12A", chỉ 10 người này nhận được.
+
+---
 
 ## 1. Tại sao lại chọn Socket.io? ("Lý do")
 
@@ -24,6 +53,28 @@
 
 - Nó tự động xử lý việc kết nối lại (reconnection).
 - Nếu kết nối bị rớt, nó sẽ đệm các gói tin và cố gắng kết nối lại, đảm bảo trải nghiệm người dùng mượt mà ngay cả khi mạng chập chờn.
+
+---
+
+## 1.5. Mối Quan Hệ Giữa Backend, Node.js & Express ("Bộ Ba Quyền Lực")
+
+Bạn có thể thắc mắc: _"Tại sao lại cần cả Node.js và Express nữa?"_
+
+### 🌿 Node.js là gì?
+
+- **Định nghĩa**: Là một môi trường chạy mã JavaScript (Runtime Environment) bên ngoài trình duyệt. Bình thường JS chỉ chạy trên Chrome/Firefox, Node.js giúp JS chạy được trên máy chủ (Server).
+- **Vai trò**: Nó là "cái máy", cái nền tảng để Server của bạn hoạt động. Không có Node.js thì không chạy được code backend.
+
+### 🚂 Express là gì?
+
+- **Định nghĩa**: Là một Framework web chạy trên nền Node.js.
+- **Vai trò**: Node.js thuần túy rất "thô sơ" và khó dùng để dựng web server. Express giống như bộ công cụ giúp bạn dựng server nhanh hơn:
+  - Quản lý đường dẫn (Routing): `/home`, `/api/login`...
+  - Xử lý các yêu cầu HTTP (GET, POST).
+- **Trong dự án này**:
+  1.  **Express** dùng để dựng lên cái Web Server (http server).
+  2.  **Socket.io** sau đó sẽ "ké" (attach) vào cái server Express đó để hoạt động.
+  3.  Express cũng dùng để viết các API phụ trợ (như API lấy token cho LiveKit voice).
 
 ---
 
