@@ -3,9 +3,6 @@ import { io } from 'socket.io-client';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
 
-
-// PeerJS removed
-
 // Import all views
 import {
   HomeView,

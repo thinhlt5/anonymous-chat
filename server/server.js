@@ -114,7 +114,7 @@ const selfDestructRoom = (roomName) => {
 
     if (rooms[roomName].users.size === 0) {
         delete rooms[roomName];
-        logSystem(`SELF-DESTRUCT: Room "${roomName}" erased from memory. Zero footprint achieved.`);
+        logSystem(`SELF-DESTRUCT: Room "${roomName}" erased from memory.`);
     }
 };
 
