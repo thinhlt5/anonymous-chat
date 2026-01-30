@@ -287,7 +287,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
                     {/* Typing Indicator */}
                     {typingUsers.length > 0 && (
-                        <div className="px-4 py-2 text-xs text-gray-400 flex-shrink-0">
+                        <div className="px-4 py-2 mt-3 text-xs text-gray-400 flex-shrink-0">
                             {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
                         </div>
                     )}
