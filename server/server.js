@@ -85,8 +85,6 @@ let rooms = {};
 // socketRoomMap = { socketId: roomName } - Track which room each socket is in
 let socketRoomMap = {};
 
-// voiceChatRooms = { roomName: Map<peerId, { peerId, username, socketId }> }
-let voiceChatRooms = {};
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -281,60 +279,7 @@ io.on("connection", (socket) => {
         socket.to(room).emit("user_typing", { username, isTyping: false });
     });
 
-    // ─────────────────────────────────────────────────────────────────
-    // VOICE CHAT - Group Voice Chat Room
-    // ─────────────────────────────────────────────────────────────────
-    socket.on("join_voice_chat", ({ room, username, peerId }) => {
-        if (!voiceChatRooms[room]) {
-            voiceChatRooms[room] = new Map();
-        }
 
-        const voiceUserData = {
-            peerId,
-            username,
-            socketId: socket.id
-        };
-
-        voiceChatRooms[room].set(peerId, voiceUserData);
-
-        logSystem(`${username} joined voice chat in room "${room}"`);
-
-        // Notify others in the room about the new voice user
-        socket.to(room).emit("user_joined_voice", { peerId, username });
-
-        // Send updated voice chat user list to all in room
-        const voiceUsers = Array.from(voiceChatRooms[room].values());
-        io.to(room).emit("voice_chat_users", voiceUsers);
-    });
-
-    socket.on("leave_voice_chat", ({ room, username, peerId }) => {
-        if (voiceChatRooms[room]) {
-            voiceChatRooms[room].delete(peerId);
-
-            logSystem(`${username} left voice chat in room "${room}"`);
-
-            // Notify others
-            socket.to(room).emit("user_left_voice", { peerId, username });
-
-            // Send updated voice chat user list
-            const voiceUsers = Array.from(voiceChatRooms[room].values());
-            io.to(room).emit("voice_chat_users", voiceUsers);
-
-            // Clean up empty voice chat room
-            if (voiceChatRooms[room].size === 0) {
-                delete voiceChatRooms[room];
-            }
-        }
-    });
-
-    socket.on("get_voice_chat_users", ({ room }, callback) => {
-        if (voiceChatRooms[room]) {
-            const voiceUsers = Array.from(voiceChatRooms[room].values());
-            callback(voiceUsers);
-        } else {
-            callback([]);
-        }
-    });
 
 
 
@@ -420,10 +365,7 @@ server.listen(PORT, () => {
 ║             ██╔═══╝ ██╔══██╗██║   ██║   ██║   ██║   ██║          ║
 ║             ██║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝          ║
 ║             ╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝           ║
-║                                                                   ║
-║           CORE SYSTEM ONLINE - PORT ${PORT}                     ║
-║           Anonymous Encryption Layer v1.0                      ║
-║           Self-Destruct Protocol: ACTIVE                       ║
+║                                                                   ║                      ║
 ║                                                                   ║
 ╚═══════════════════════════════════════════════════════════════════╝
     `);
