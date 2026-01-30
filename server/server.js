@@ -164,18 +164,18 @@ io.on("connection", (socket) => {
     socket.on("join_room", ({ room, password, username, peerId }, callback) => {
         // Check if room exists
         if (!rooms[room]) {
-            return callback({ success: false, error: "ROOM_NOT_FOUND", message: "Operation not found. Invalid coordinates." });
+            return callback({ success: false, error: "ROOM_NOT_FOUND", message: "Room not found. Please try again." });
         }
 
         // Verify password if required
         if (rooms[room].password !== null && rooms[room].password !== password) {
-            return callback({ success: false, error: "WRONG_PASSWORD", message: "Access denied. Incorrect decryption key." });
+            return callback({ success: false, error: "WRONG_PASSWORD", message: "Access denied. Incorrect password." });
         }
 
         // Check if username is already taken in the room
         const existingUsers = getRoomUsers(room);
         if (existingUsers.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-            return callback({ success: false, error: "USERNAME_TAKEN", message: "Alias already compromised in this operation." });
+            return callback({ success: false, error: "USERNAME_TAKEN", message: "Nickname already in use in this room." });
         }
 
         // Add user to room
@@ -336,22 +336,7 @@ io.on("connection", (socket) => {
         }
     });
 
-    // Legacy 1-to-1 call signaling (kept for backwards compatibility)
-    socket.on("call_user", ({ targetId, callerId, callerName }) => {
-        io.to(targetId).emit("incoming_call", { callerId, callerName });
-    });
 
-    socket.on("call_accepted", ({ callerId }) => {
-        io.to(callerId).emit("call_accepted");
-    });
-
-    socket.on("call_rejected", ({ callerId }) => {
-        io.to(callerId).emit("call_rejected");
-    });
-
-    socket.on("end_call", ({ targetId }) => {
-        io.to(targetId).emit("call_ended");
-    });
 
     // ─────────────────────────────────────────────────────────────────
     // DISCONNECT - Handle user leaving and Self-Destruct mechanism
