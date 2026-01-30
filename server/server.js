@@ -271,12 +271,11 @@ io.on("connection", (socket) => {
     // ─────────────────────────────────────────────────────────────────
     // TYPING INDICATOR
     // ─────────────────────────────────────────────────────────────────
-    socket.on("typing_start", ({ room, username }) => {
-        socket.to(room).emit("user_typing", { username, isTyping: true });
-    });
-
-    socket.on("typing_stop", ({ room, username }) => {
-        socket.to(room).emit("user_typing", { username, isTyping: false });
+    // ─────────────────────────────────────────────────────────────────
+    // TYPING INDICATOR
+    // ─────────────────────────────────────────────────────────────────
+    socket.on("typing", ({ room, username, isTyping }) => {
+        socket.to(room).emit("user_typing", { username, isTyping });
     });
 
 

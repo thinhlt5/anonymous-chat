@@ -404,7 +404,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
                                 </button>
                                 <p className="text-[10px] text-gray-500 text-center mt-2 flex items-center justify-center gap-1">
                                     <Headphones className="w-3 h-3" />
-                                    No Echo • Clear Audio
+                                    No Echo - Clear Audio
                                 </p>
                             </>
                         )}
