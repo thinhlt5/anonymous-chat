@@ -343,43 +343,7 @@ io.on("connection", (socket) => {
     // ─────────────────────────────────────────────────────────────────
     socket.on("disconnect", () => {
         const roomName = socketRoomMap[socket.id];
-        logSystem(`Disconnect initiated for socket: ${socket.id}, room: ${roomName || 'UNKNOWN'}`);
-
-        // 1. AGGRESSIVE VOICE CHAT CLEANUP - Scan ALL rooms
-        // This ensures we catch ghost users even if socketRoomMap is corrupted
-        let cleanedVoiceRooms = 0;
-        for (const [vRoomName, voiceMap] of Object.entries(voiceChatRooms)) {
-            for (const [pId, info] of voiceMap.entries()) {
-                if (info.socketId === socket.id) {
-                    voiceMap.delete(pId);
-                    cleanedVoiceRooms++;
-
-                    logSystem(`Removed ${info.username} from voice chat in "${vRoomName}"`);
-
-                    // Notify others in voice chat
-                    socket.to(vRoomName).emit("user_left_voice", { 
-                        peerId: pId, 
-                        username: info.username 
-                    });
-
-                    // Send updated voice chat user list
-                    const voiceUsers = Array.from(voiceMap.values());
-                    io.to(vRoomName).emit("voice_chat_users", voiceUsers);
-
-                    // Clean up empty voice chat room
-                    if (voiceMap.size === 0) {
-                        delete voiceChatRooms[vRoomName];
-                        logSystem(`Empty voice room "${vRoomName}" deleted`);
-                    }
-                }
-            }
-        }
-
-        if (cleanedVoiceRooms > 0) {
-            logSystem(`Cleaned ${cleanedVoiceRooms} voice chat connection(s)`);
-        }
-
-        // 2. Cleanup Main Room
+        
         if (roomName && rooms[roomName]) {
             const user = rooms[roomName].users.get(socket.id);
             const username = user ? user.username : "Unknown Agent";
